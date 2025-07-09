@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { OrderStatus } from '@/types';
 
+// GET /api/orders/[id] - Récupérer une commande par ID
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -109,6 +110,68 @@ export async function PATCH(
     console.error('Erreur lors de la mise à jour de la commande:', error);
     return NextResponse.json(
       { error: 'Erreur serveur lors de la mise à jour de la commande' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/orders/[id] - Annuler une commande
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+    const orderId = parseInt(id);
+
+    if (isNaN(orderId)) {
+      return NextResponse.json(
+        { error: 'ID de commande invalide' },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier que la commande existe et peut être annulée
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId }
+    });
+
+    if (!existingOrder) {
+      return NextResponse.json(
+        { error: 'Commande non trouvée' },
+        { status: 404 }
+      );
+    }
+
+    if (existingOrder.status === 'DELIVERED' || existingOrder.status === 'CANCELLED') {
+      return NextResponse.json(
+        { error: 'Cette commande ne peut pas être annulée' },
+        { status: 400 }
+      );
+    }
+
+    // Marquer la commande comme annulée
+    const cancelledOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'CANCELLED',
+        updatedAt: new Date()
+      },
+      include: {
+        customer: true,
+        orderItems: {
+          include: {
+            product: true
+          }
+        }
+      }
+    });
+
+    return NextResponse.json(cancelledOrder);
+  } catch (error) {
+    console.error('Erreur lors de l\'annulation de la commande:', error);
+    return NextResponse.json(
+      { error: 'Erreur serveur lors de l\'annulation de la commande' },
       { status: 500 }
     );
   }
