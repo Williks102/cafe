@@ -1,174 +1,120 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { OrderStatus } from '@/types';
 
-// GET /api/orders/[id] - Récupérer une commande par ID
+// GET /api/products/[id] - Récupérer un produit par ID
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const orderId = parseInt(params.id);
+    const productId = parseInt(params.id);
 
-    if (isNaN(orderId)) {
+    if (isNaN(productId)) {
       return NextResponse.json(
-        { error: 'ID de commande invalide' },
+        { error: 'ID de produit invalide' },
         { status: 400 }
       );
     }
 
-    const order = await prisma.order.findUnique({
+    const product = await prisma.product.findUnique({
       where: {
-        id: orderId
-      },
-      include: {
-        customer: true,
-        orderItems: {
-          include: {
-            product: true
-          }
-        }
+        id: productId
       }
     });
 
-    if (!order) {
+    if (!product) {
       return NextResponse.json(
-        { error: 'Commande non trouvée' },
+        { error: 'Produit non trouvé' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(order);
+    return NextResponse.json(product);
   } catch (error) {
-    console.error('Erreur lors de la récupération de la commande:', error);
+    console.error('Erreur lors de la récupération du produit:', error);
     return NextResponse.json(
-      { error: 'Erreur serveur lors de la récupération de la commande' },
+      { error: 'Erreur serveur lors de la récupération du produit' },
       { status: 500 }
     );
   }
 }
 
-// PATCH /api/orders/[id] - Mettre à jour le statut d'une commande
-export async function PATCH(
+// PUT /api/products/[id] - Mettre à jour un produit
+export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const orderId = parseInt(params.id);
+    const productId = parseInt(params.id);
     const body = await request.json();
-    const { status, notes } = body;
 
-    if (isNaN(orderId)) {
+    if (isNaN(productId)) {
       return NextResponse.json(
-        { error: 'ID de commande invalide' },
+        { error: 'ID de produit invalide' },
         { status: 400 }
       );
     }
 
-    // Valider le statut si fourni
-    if (status && !Object.values(OrderStatus).includes(status)) {
-      return NextResponse.json(
-        { error: 'Statut de commande invalide' },
-        { status: 400 }
-      );
-    }
-
-    // Vérifier que la commande existe
-    const existingOrder = await prisma.order.findUnique({
-      where: { id: orderId }
+    // Vérifier que le produit existe
+    const existingProduct = await prisma.product.findUnique({
+      where: { id: productId }
     });
 
-    if (!existingOrder) {
+    if (!existingProduct) {
       return NextResponse.json(
-        { error: 'Commande non trouvée' },
+        { error: 'Produit non trouvé' },
         { status: 404 }
       );
     }
 
-    // Mettre à jour la commande
-    const updatedOrder = await prisma.order.update({
-      where: { id: orderId },
+    // Mettre à jour le produit
+    const updatedProduct = await prisma.product.update({
+      where: { id: productId },
       data: {
-        ...(status && { status }),
-        ...(notes !== undefined && { notes }),
+        ...body,
         updatedAt: new Date()
-      },
-      include: {
-        customer: true,
-        orderItems: {
-          include: {
-            product: true
-          }
-        }
       }
     });
 
-    return NextResponse.json(updatedOrder);
+    return NextResponse.json(updatedProduct);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la commande:', error);
+    console.error('Erreur lors de la mise à jour du produit:', error);
     return NextResponse.json(
-      { error: 'Erreur serveur lors de la mise à jour de la commande' },
+      { error: 'Erreur serveur lors de la mise à jour du produit' },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/orders/[id] - Annuler une commande
+// DELETE /api/products/[id] - Supprimer un produit (soft delete)
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const orderId = parseInt(params.id);
+    const productId = parseInt(params.id);
 
-    if (isNaN(orderId)) {
+    if (isNaN(productId)) {
       return NextResponse.json(
-        { error: 'ID de commande invalide' },
+        { error: 'ID de produit invalide' },
         { status: 400 }
       );
     }
 
-    // Vérifier que la commande existe et peut être annulée
-    const existingOrder = await prisma.order.findUnique({
-      where: { id: orderId }
-    });
-
-    if (!existingOrder) {
-      return NextResponse.json(
-        { error: 'Commande non trouvée' },
-        { status: 404 }
-      );
-    }
-
-    if (existingOrder.status === 'DELIVERED' || existingOrder.status === 'CANCELLED') {
-      return NextResponse.json(
-        { error: 'Cette commande ne peut pas être annulée' },
-        { status: 400 }
-      );
-    }
-
-    // Marquer la commande comme annulée
-    const cancelledOrder = await prisma.order.update({
-      where: { id: orderId },
+    // Soft delete - marquer comme non disponible
+    await prisma.product.update({
+      where: { id: productId },
       data: {
-        status: 'CANCELLED',
+        available: false,
         updatedAt: new Date()
-      },
-      include: {
-        customer: true,
-        orderItems: {
-          include: {
-            product: true
-          }
-        }
       }
     });
 
-    return NextResponse.json(cancelledOrder);
+    return NextResponse.json({ message: 'Produit supprimé avec succès' });
   } catch (error) {
-    console.error('Erreur lors de l\'annulation de la commande:', error);
+    console.error('Erreur lors de la suppression du produit:', error);
     return NextResponse.json(
-      { error: 'Erreur serveur lors de l\'annulation de la commande' },
+      { error: 'Erreur serveur lors de la suppression du produit' },
       { status: 500 }
     );
   }

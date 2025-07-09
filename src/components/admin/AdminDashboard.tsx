@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -11,12 +12,9 @@ import {
   Users, 
   DollarSign, 
   Clock, 
-  CheckCircle, 
-  XCircle, 
   Eye,
   RefreshCw,
   Search,
-  Filter,
   Phone,
   Mail,
   Calendar,
@@ -471,9 +469,11 @@ export default function AdminDashboard() {
                 <div className="space-y-3">
                   {selectedOrder.orderItems.map((item) => (
                     <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                      <img 
+                      <Image 
                         src={item.product.image} 
                         alt={item.product.name}
+                        width={64}
+                        height={64}
                         className="w-16 h-16 object-cover rounded-lg"
                       />
                       <div className="flex-1">

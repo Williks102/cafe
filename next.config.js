@@ -5,10 +5,14 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
-        port: '',
         pathname: '/**',
       },
     ],
+  },
+  eslint: {
+    // Ignorer les erreurs ESLint pendant le build en production
+    // Décommentez cette ligne si vous voulez forcer le déploiement
+    // ignoreDuringBuilds: true,
   },
 }
 

@@ -3,12 +3,6 @@ import { prisma } from '@/lib/prisma';
 import { CreateOrderRequest, OrderStatus } from '@/types';
 
 // Types pour les requêtes API
-interface OrdersQuery {
-  status?: OrderStatus;
-  limit: number;
-  offset: number;
-}
-
 interface ProductFromDB {
   id: number;
   name: string;

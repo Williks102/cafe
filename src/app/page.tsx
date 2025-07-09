@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -278,9 +279,11 @@ export default function CoffeeShopApp() {
                 onClick={() => setSelectedProduct(product)}
               >
                 <div className="relative overflow-hidden">
-                  <img 
+                  <Image 
                     src={product.image} 
                     alt={product.name} 
+                    width={600}
+                    height={256}
                     className="w-full h-64 object-cover hover:scale-110 transition-transform duration-300" 
                   />
                   <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-300" />
@@ -326,9 +329,11 @@ export default function CoffeeShopApp() {
 
           {selectedProduct && (
             <div className="space-y-6">
-              <img 
+              <Image 
                 src={selectedProduct.image} 
                 alt={selectedProduct.name}
+                width={400}
+                height={192}
                 className="w-full h-48 object-cover rounded-lg"
               />
               
@@ -400,7 +405,7 @@ export default function CoffeeShopApp() {
             {cart.length === 0 ? (
               <div className="text-center py-8">
                 <ShoppingCart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500 text-lg">Votre panier est vide</p>
+                                        <p className="text-gray-500 text-lg">Votre panier est vide</p>
               </div>
             ) : (
               <>
@@ -408,9 +413,11 @@ export default function CoffeeShopApp() {
                 <div className="space-y-4 max-h-60 overflow-y-auto">
                   {cart.map((item) => (
                     <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                      <img 
+                      <Image 
                         src={item.image} 
                         alt={item.name}
+                        width={64}
+                        height={64}
                         className="w-16 h-16 object-cover rounded-lg"
                       />
                       <div className="flex-1">
