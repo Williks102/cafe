@@ -4,10 +4,11 @@ import { prisma } from '@/lib/prisma';
 // GET /api/products/[id] - Récupérer un produit par ID
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const productId = parseInt(params.id);
+    const { id } = await context.params;
+    const productId = parseInt(id);
 
     if (isNaN(productId)) {
       return NextResponse.json(
@@ -42,10 +43,11 @@ export async function GET(
 // PUT /api/products/[id] - Mettre à jour un produit
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const productId = parseInt(params.id);
+    const { id } = await context.params;
+    const productId = parseInt(id);
     const body = await request.json();
 
     if (isNaN(productId)) {
@@ -89,10 +91,11 @@ export async function PUT(
 // DELETE /api/products/[id] - Supprimer un produit (soft delete)
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const productId = parseInt(params.id);
+    const { id } = await context.params;
+    const productId = parseInt(id);
 
     if (isNaN(productId)) {
       return NextResponse.json(
