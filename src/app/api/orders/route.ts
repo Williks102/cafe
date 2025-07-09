@@ -1,99 +1,181 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { OrderStatus } from '@/types';
+import { CreateOrderRequest, OrderStatus } from '@/types';
 
-// GET /api/orders/[id] - Récupérer une commande par ID
-export async function GET(
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+// Types pour les requêtes API
+interface ProductFromDB {
+  id: number;
+  name: string;
+  price: number;
+  available: boolean;
+}
+
+interface OrderWithRelations {
+  id: number;
+  customerId: number;
+  status: OrderStatus;
+  totalPrice: number;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  customer: {
+    id: number;
+    name: string;
+    email?: string;
+    phone: string;
+  };
+  orderItems: Array<{
+    id: number;
+    quantity: number;
+    price: number;
+    product: {
+      id: number;
+      name: string;
+      category?: string;
+      image: string;
+    };
+  }>;
+}
+
+// GET /api/orders - Récupérer toutes les commandes
+export async function GET(request: Request) {
   try {
-    const { id } = await context.params;
-    const orderId = parseInt(id);
+    const { searchParams } = new URL(request.url);
+    const statusParam = searchParams.get('status');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
 
-    if (isNaN(orderId)) {
+    // Validation du statut si fourni
+    let status: OrderStatus | undefined;
+    if (statusParam && Object.values(OrderStatus).includes(statusParam as OrderStatus)) {
+      status = statusParam as OrderStatus;
+    }
+
+    const where = status ? { status } : {};
+
+    const orders: OrderWithRelations[] = await prisma.order.findMany({
+      where,
+      include: {
+        customer: true,
+        orderItems: {
+          include: {
+            product: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: limit,
+      skip: offset
+    });
+
+    const totalCount = await prisma.order.count({ where });
+
+    return NextResponse.json({
+      orders,
+      totalCount,
+      hasMore: offset + limit < totalCount
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des commandes:', error);
+    return NextResponse.json(
+      { error: 'Erreur serveur lors de la récupération des commandes' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/orders - Créer une nouvelle commande
+export async function POST(request: Request) {
+  try {
+    const body: CreateOrderRequest = await request.json();
+    const { customerName, customerEmail, customerPhone, items, notes } = body;
+
+    // Validation des données
+    if (!customerName || !customerPhone || !items || items.length === 0) {
       return NextResponse.json(
-        { error: 'ID de commande invalide' },
+        { error: 'Informations client et articles requis' },
         { status: 400 }
       );
     }
 
-    const order = await prisma.order.findUnique({
+    // Validation du format du téléphone ivoirien (plus flexible)
+    const cleanPhone = customerPhone.replace(/[\s\-\.]/g, ''); // Supprimer espaces, tirets, points
+    const phoneRegex = /^(\+225|225)?[0-9]{8,10}$/;
+    if (!phoneRegex.test(cleanPhone)) {
+      return NextResponse.json(
+        { error: 'Format de téléphone invalide. Utilisez le format: +225 XX XX XX XX XX ou 07 XX XX XX XX' },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier que tous les produits existent et sont disponibles
+    const productIds = items.map(item => item.productId);
+    const products: ProductFromDB[] = await prisma.product.findMany({
       where: {
-        id: orderId
-      },
-      include: {
-        customer: true,
-        orderItems: {
-          include: {
-            product: true
-          }
-        }
+        id: { in: productIds },
+        available: true
       }
     });
 
-    if (!order) {
+    if (products.length !== productIds.length) {
       return NextResponse.json(
-        { error: 'Commande non trouvée' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(order);
-  } catch (error) {
-    console.error('Erreur lors de la récupération de la commande:', error);
-    return NextResponse.json(
-      { error: 'Erreur serveur lors de la récupération de la commande' },
-      { status: 500 }
-    );
-  }
-}
-
-// PATCH /api/orders/[id] - Mettre à jour le statut d'une commande
-export async function PATCH(
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await context.params;
-    const orderId = parseInt(id);
-    const body = await request.json();
-    const { status, notes } = body;
-
-    if (isNaN(orderId)) {
-      return NextResponse.json(
-        { error: 'ID de commande invalide' },
+        { error: 'Un ou plusieurs produits ne sont pas disponibles' },
         { status: 400 }
       );
     }
 
-    // Valider le statut si fourni
-    if (status && !Object.values(OrderStatus).includes(status)) {
-      return NextResponse.json(
-        { error: 'Statut de commande invalide' },
-        { status: 400 }
-      );
-    }
-
-    // Vérifier que la commande existe
-    const existingOrder = await prisma.order.findUnique({
-      where: { id: orderId }
+    // Calculer le prix total
+    let totalPrice = 0;
+    const orderItemsData = items.map(item => {
+      const product = products.find((p: ProductFromDB) => p.id === item.productId);
+      if (!product) {
+        throw new Error(`Produit ${item.productId} non trouvé`);
+      }
+      const itemTotal = product.price * item.quantity;
+      totalPrice += itemTotal;
+      return {
+        productId: item.productId,
+        quantity: item.quantity,
+        price: product.price
+      };
     });
 
-    if (!existingOrder) {
-      return NextResponse.json(
-        { error: 'Commande non trouvée' },
-        { status: 404 }
-      );
+    // Créer ou récupérer le client
+    let customer = await prisma.customer.findUnique({
+      where: { phone: customerPhone }
+    });
+
+    if (!customer) {
+      customer = await prisma.customer.create({
+        data: {
+          name: customerName,
+          email: customerEmail || null,
+          phone: customerPhone
+        }
+      });
+    } else {
+      // Mettre à jour les informations du client si nécessaire
+      customer = await prisma.customer.update({
+        where: { id: customer.id },
+        data: {
+          name: customerName,
+          email: customerEmail || customer.email
+        }
+      });
     }
 
-    // Mettre à jour la commande
-    const updatedOrder = await prisma.order.update({
-      where: { id: orderId },
+    // Créer la commande avec les articles
+    const order = await prisma.order.create({
       data: {
-        ...(status && { status }),
-        ...(notes !== undefined && { notes }),
-        updatedAt: new Date()
+        customerId: customer.id,
+        totalPrice,
+        notes,
+        status: OrderStatus.PENDING,
+        orderItems: {
+          create: orderItemsData
+        }
       },
       include: {
         customer: true,
@@ -105,73 +187,11 @@ export async function PATCH(
       }
     });
 
-    return NextResponse.json(updatedOrder);
+    return NextResponse.json(order, { status: 201 });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la commande:', error);
+    console.error('Erreur lors de la création de la commande:', error);
     return NextResponse.json(
-      { error: 'Erreur serveur lors de la mise à jour de la commande' },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE /api/orders/[id] - Annuler une commande
-export async function DELETE(
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await context.params;
-    const orderId = parseInt(id);
-
-    if (isNaN(orderId)) {
-      return NextResponse.json(
-        { error: 'ID de commande invalide' },
-        { status: 400 }
-      );
-    }
-
-    // Vérifier que la commande existe et peut être annulée
-    const existingOrder = await prisma.order.findUnique({
-      where: { id: orderId }
-    });
-
-    if (!existingOrder) {
-      return NextResponse.json(
-        { error: 'Commande non trouvée' },
-        { status: 404 }
-      );
-    }
-
-    if (existingOrder.status === 'DELIVERED' || existingOrder.status === 'CANCELLED') {
-      return NextResponse.json(
-        { error: 'Cette commande ne peut pas être annulée' },
-        { status: 400 }
-      );
-    }
-
-    // Marquer la commande comme annulée
-    const cancelledOrder = await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: 'CANCELLED',
-        updatedAt: new Date()
-      },
-      include: {
-        customer: true,
-        orderItems: {
-          include: {
-            product: true
-          }
-        }
-      }
-    });
-
-    return NextResponse.json(cancelledOrder);
-  } catch (error) {
-    console.error('Erreur lors de l\'annulation de la commande:', error);
-    return NextResponse.json(
-      { error: 'Erreur serveur lors de l\'annulation de la commande' },
+      { error: 'Erreur serveur lors de la création de la commande' },
       { status: 500 }
     );
   }
