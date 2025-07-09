@@ -1,30 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
-// Types pour les statistiques
-interface OrderWithRelations {
-  id: number;
-  customerId: number;
-  status: string;
-  totalPrice: number;
-  createdAt: Date;
-  customer: {
-    id: number;
-    name: string;
-    email?: string;
-    phone: string;
-  };
-  orderItems: Array<{
-    id: number;
-    quantity: number;
-    price: number;
-    product: {
-      id: number;
-      name: string;
-      category?: string;
+// Types Prisma pour éviter les conflits
+type OrderWithRelations = Prisma.OrderGetPayload<{
+  include: {
+    customer: true;
+    orderItems: {
+      include: {
+        product: true;
+      };
     };
-  }>;
-}
+  };
+}>;
 
 interface ProductSales {
   [key: string]: {
