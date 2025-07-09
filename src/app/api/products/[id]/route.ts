@@ -102,7 +102,7 @@ export async function DELETE(
     }
 
     // Soft delete - marquer comme non disponible
-    const deletedProduct = await prisma.product.update({
+    await prisma.product.update({
       where: { id: productId },
       data: {
         available: false,

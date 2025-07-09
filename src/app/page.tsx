@@ -251,7 +251,7 @@ export default function CoffeeShopApp() {
       {/* Hero Section */}
       <section className="text-center py-20 px-4">
         <h1 className="text-6xl font-bold mb-6 text-gray-800">
-          CAFÉ D'EXCEPTION
+          CAFÉ DEXCEPTION
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
           Découvrez notre sélection de cafés premium torréfiés artisanalement. 

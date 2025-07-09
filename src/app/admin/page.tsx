@@ -5,6 +5,6 @@ export default function AdminPage() {
 }
 
 export const metadata = {
-  title: 'Console Admin - Café Délice',
+  title: 'Console Admin - Cafe Delice',
   description: 'Gestion des commandes et administration',
 };
