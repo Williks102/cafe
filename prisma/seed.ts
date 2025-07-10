@@ -13,7 +13,7 @@ async function main() {
 
   console.log('📦 Création des produits...');
   
-  // Créer les produits un par un pour récupérer les IDs
+  // ANCIENS PRODUITS (café préparé)
   const espresso = await prisma.product.create({
     data: {
       name: "Espresso Intense",
@@ -80,6 +80,40 @@ async function main() {
     }
   });
 
+  // NOUVEAUX PRODUITS MOSESCAFE (produits premium)
+  const espressoMoulu = await prisma.product.create({
+    data: {
+      name: "Espresso Moulu Robusta",
+      description: "L'authenticité du terroir ivoirien dans chaque tasse. Un Robusta puissant, torréfié artisanalement pour les vrais amateurs. Notes boisées, épicées et cacao amer avec une intensité 10/10.",
+      image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600",
+      price: 8000, // Prix de base pour 500g
+      category: "Espresso Moulu",
+      available: true
+    }
+  });
+
+  const capsulesRobusta = await prisma.product.create({
+    data: {
+      name: "Capsules Robusta - Compatible Nespresso®",
+      description: "L'intensité et le caractère du Robusta ivoirien dans la simplicité d'une capsule. Compatible Nespresso® pour un espresso d'exception. Boîte de 10 capsules, torréfaction foncée, intensité 10/10.",
+      image: "https://images.unsplash.com/photo-1511920170033-f8396924c348?w=600",
+      price: 3500, // Prix pour une boîte de 10 capsules
+      category: "Capsules",
+      available: true
+    }
+  });
+
+  const espressoGrains = await prisma.product.create({
+    data: {
+      name: "Espresso en Grains Robusta",
+      description: "Caractère africain, torréfaction artisanale. Plongez dans l'authenticité d'un espresso intense avec notre Robusta 100% pur origine Côte d'Ivoire. Idéal pour machine espresso broyeur.",
+      image: "https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=600",
+      price: 9500, // Prix de base pour 500g
+      category: "Grains Robusta",
+      available: true
+    }
+  });
+
   console.log('👥 Création des clients...');
 
   // Créer des clients de test
@@ -108,7 +142,7 @@ async function main() {
 
   console.log('📋 Création des commandes de test...');
 
-  // Commande 1 - Kouamé Jean-Baptiste
+  // Commande 1 - Produits anciens
   const order1 = await prisma.order.create({
     data: {
       customerId: customer1.id,
@@ -132,47 +166,43 @@ async function main() {
     }
   });
 
-  // Commande 2 - Aya Marie-Claire
+  // Commande 2 - Produits nouveaux MosesCafe
   const order2 = await prisma.order.create({
     data: {
       customerId: customer2.id,
       status: 'PREPARING',
-      totalPrice: 5800, // 1x Cold Brew + 1x Mocha
-      notes: "À emporter s'il vous plaît",
+      totalPrice: 12000, // 1x Espresso Moulu + 1x Capsules
+      notes: "Commande produits MosesCafe premium",
       orderItems: {
         create: [
           {
-            productId: coldBrew.id,
+            productId: espressoMoulu.id,
             quantity: 1,
-            price: coldBrew.price
+            price: espressoMoulu.price
           },
           {
-            productId: mocha.id,
+            productId: capsulesRobusta.id,
             quantity: 1,
-            price: mocha.price
+            price: capsulesRobusta.price
           }
         ]
       }
     }
   });
 
-  // Commande 3 - Koffi Pierre
+  // Commande 3 - Produit Grains
   const order3 = await prisma.order.create({
     data: {
       customerId: customer3.id,
       status: 'PENDING',
-      totalPrice: 4100, // 1x Cappuccino + 1x Americano
+      totalPrice: 9500, // 1x Grains Robusta
+      notes: "Livraison urgente pour machine espresso",
       orderItems: {
         create: [
           {
-            productId: cappuccino.id,
+            productId: espressoGrains.id,
             quantity: 1,
-            price: cappuccino.price
-          },
-          {
-            productId: americano.id,
-            quantity: 1,
-            price: americano.price
+            price: espressoGrains.price
           }
         ]
       }
@@ -180,13 +210,13 @@ async function main() {
   });
 
   console.log('✅ Base de données initialisée avec succès!');
-  console.log(`📦 6 produits créés`);
+  console.log(`📦 9 produits créés (6 anciens + 3 nouveaux MosesCafe)`);
   console.log(`👥 3 clients créés`);
   console.log(`📋 3 commandes de test créées`);
-  console.log('\n🎯 Données créées:');
-  console.log('├── Produits: Espresso, Latte, Cold Brew, Cappuccino, Americano, Mocha');
-  console.log('├── Clients: Kouamé Jean-Baptiste, Aya Marie-Claire, Koffi Pierre');
-  console.log('└── Commandes: CONFIRMED, PREPARING, PENDING');
+  console.log('\n🎯 Nouveaux produits MosesCafe:');
+  console.log('├── Espresso Moulu Robusta (500g) - 8 000 CFA');
+  console.log('├── Capsules Robusta (10 pcs) - 3 500 CFA');
+  console.log('└── Espresso en Grains Robusta (500g) - 9 500 CFA');
 }
 
 main()

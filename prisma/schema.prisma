@@ -18,6 +18,7 @@ model Product {
   price       Int      // Prix en CFA (centimes)
   category    String?  @db.VarChar(100)
   available   Boolean  @default(true)
+  stock       Int      @default(0)    // Nouveau: Gestion du stock
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -1,24 +1,28 @@
+// Interface pour les produits
 export interface Product {
   id: number;
   name: string;
   description: string;
   image: string;
   price: number;
-  category?: string;
+  category: string; // Changed from string | null to string
   available: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  stock?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
+// Interface pour les clients
 export interface Customer {
   id: number;
   name: string;
   email?: string;
   phone: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
+// Interface pour les articles de commande
 export interface OrderItem {
   id: number;
   orderId: number;
@@ -28,43 +32,37 @@ export interface OrderItem {
   product: Product;
 }
 
+// Interface pour les commandes
 export interface Order {
   id: number;
   customerId: number;
-  status: OrderStatus;
+  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED';
   totalPrice: number;
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   customer: Customer;
   orderItems: OrderItem[];
 }
 
-export enum OrderStatus {
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  PREPARING = 'PREPARING',
-  READY = 'READY',
-  DELIVERED = 'DELIVERED',
-  CANCELLED = 'CANCELLED'
-}
-
+// Interface pour créer une commande (landing pages)
 export interface CreateOrderRequest {
   customerName: string;
   customerEmail?: string;
   customerPhone: string;
-  items: {
-    productId: number;
-    quantity: number;
-  }[];
+  customerAddress?: string;
+  source?: string;
   notes?: string;
-}
-
-export interface CartItem {
-  id: number;
-  name: string;
-  description: string;
-  image: string;
-  price: number;
-  quantity: number;
+  items: Array<{
+    // Pour produits existants
+    productId?: number;
+    // Pour produits des landing pages
+    productName?: string;
+    description?: string;
+    price?: number;
+    category?: string;
+    image?: string;
+    // Commun
+    quantity: number;
+  }>;
 }

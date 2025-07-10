@@ -2,20 +2,24 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Minus, Plus, ShoppingCart, X, Coffee, Loader2 } from "lucide-react";
 import { Product, CreateOrderRequest } from "@/types";
+import Header from "@/components/Header";
 
 interface CartItem extends Product {
   quantity: number;
 }
 
 export default function CoffeeShopApp() {
-  // États pour les produits
+  // États pour les produits et filtres
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +35,15 @@ export default function CoffeeShopApp() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Filtrer les produits par catégorie
+  useEffect(() => {
+    if (selectedCategory === 'ALL') {
+      setFilteredProducts(products);
+    } else {
+      setFilteredProducts(products.filter(product => product.category === selectedCategory));
+    }
+  }, [products, selectedCategory]);
 
   const fetchProducts = async () => {
     try {
@@ -48,6 +61,15 @@ export default function CoffeeShopApp() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Obtenir les catégories disponibles
+  const getAvailableCategories = (): string[] => {
+    const categories = products
+      .map(p => p.category)
+      .filter((category): category is string => Boolean(category))
+      .filter((category, index, array) => array.indexOf(category) === index); // Remove duplicates
+    return categories;
   };
 
   // Fonctions du panier (inchangées)
@@ -225,33 +247,17 @@ export default function CoffeeShopApp() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
-      {/* Header avec panier */}
-      <header className="bg-white shadow-sm border-b border-amber-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Coffee className="w-8 h-8 text-amber-600" />
-            <h1 className="text-2xl font-bold text-gray-800">Café Délice</h1>
-          </div>
-          <Button
-            onClick={() => setShowCart(true)}
-            variant="outline"
-            className="relative"
-          >
-            <ShoppingCart className="w-5 h-5 mr-2" />
-            Panier
-            {getTotalItems() > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-                {getTotalItems()}
-              </span>
-            )}
-          </Button>
-        </div>
-      </header>
+      {/* Header */}
+      <Header 
+        cartItemsCount={getTotalItems()}
+        onCartClick={() => setShowCart(true)}
+        showCart={true}
+      />
 
       {/* Hero Section */}
       <section className="text-center py-20 px-4">
         <h1 className="text-6xl font-bold mb-6 text-gray-800">
-          CAFÉ DEXCEPTION
+          CAFÉ D'EXCEPTION
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
           Découvrez notre sélection de cafés premium torréfiés artisanalement. 
@@ -264,15 +270,61 @@ export default function CoffeeShopApp() {
         <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">
           Notre Sélection
         </h2>
+
+        {/* Filtres par catégorie */}
+        {products.length > 0 && (
+          <div className="flex flex-wrap justify-center gap-3 mb-12">
+            <button
+              onClick={() => setSelectedCategory('ALL')}
+              className={`px-6 py-3 rounded-full font-medium transition-all ${
+                selectedCategory === 'ALL'
+                  ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-red-50 border border-gray-200'
+              }`}
+            >
+              Tous ({products.filter(p => p.available).length})
+            </button>
+            {getAvailableCategories().map((category) => {
+              const count = products.filter(p => p.category === category && p.available).length;
+              return (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-6 py-3 rounded-full font-medium transition-all ${
+                    selectedCategory === category
+                      ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-red-50 border border-gray-200'
+                  }`}
+                >
+                  {category} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
         
-        {products.length === 0 ? (
+        {filteredProducts.length === 0 && !loading ? (
           <div className="text-center py-12">
             <Coffee className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg">Aucun produit disponible pour le moment</p>
+            <p className="text-gray-500 text-lg">
+              {selectedCategory === 'ALL' 
+                ? 'Aucun produit disponible pour le moment'
+                : `Aucun produit disponible dans la catégorie "${selectedCategory}"`
+              }
+            </p>
+            {selectedCategory !== 'ALL' && (
+              <Button
+                onClick={() => setSelectedCategory('ALL')}
+                variant="outline"
+                className="mt-4"
+              >
+                Voir tous les produits
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.filter(product => product.available).map((product) => (
+            {filteredProducts.filter(product => product.available).map((product) => (
               <div
                 key={product.id}
                 className="bg-white shadow-lg rounded-xl overflow-hidden hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer border border-amber-100"
@@ -295,14 +347,14 @@ export default function CoffeeShopApp() {
                       {product.category}
                     </span>
                   )}
-                  <p className="text-gray-600 mb-4 leading-relaxed">{product.description}</p>
+                  <p className="text-gray-600 mb-4 leading-relaxed line-clamp-3">{product.description}</p>
                   <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-amber-600">
+                    <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
                       {formatPrice(product.price)}
                     </span>
                     <Button 
                       size="sm" 
-                      className="bg-amber-600 hover:bg-amber-700"
+                      className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedProduct(product);
@@ -339,7 +391,7 @@ export default function CoffeeShopApp() {
               
               <div className="text-center">
                 <p className="text-gray-600 mb-4">{selectedProduct.description}</p>
-                <p className="text-2xl font-bold text-amber-600">
+                <p className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
                   {formatPrice(selectedProduct.price)}
                 </p>
               </div>
@@ -374,7 +426,7 @@ export default function CoffeeShopApp() {
               </div>
 
               <Button 
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3" 
+                className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white py-3" 
                 onClick={handleAddToCart}
               >
                 Ajouter au panier
@@ -405,7 +457,7 @@ export default function CoffeeShopApp() {
             {cart.length === 0 ? (
               <div className="text-center py-8">
                 <ShoppingCart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                                        <p className="text-gray-500 text-lg">Votre panier est vide</p>
+                <p className="text-gray-500 text-lg">Votre panier est vide</p>
               </div>
             ) : (
               <>

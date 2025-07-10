@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { OrderStatus } from '@/types';
 
-// GET /api/orders/[id] - Récupérer une commande par ID
+// GET /api/orders/[id] - Récupérer une commande spécifique
 export async function GET(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params;
+    const { id } = await params;
     const orderId = parseInt(id);
-
+    
     if (isNaN(orderId)) {
       return NextResponse.json(
         { error: 'ID de commande invalide' },
@@ -19,9 +18,7 @@ export async function GET(
     }
 
     const order = await prisma.order.findUnique({
-      where: {
-        id: orderId
-      },
+      where: { id: orderId },
       include: {
         customer: true,
         orderItems: {
@@ -52,14 +49,12 @@ export async function GET(
 // PATCH /api/orders/[id] - Mettre à jour le statut d'une commande
 export async function PATCH(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params;
+    const { id } = await params;
     const orderId = parseInt(id);
-    const body = await request.json();
-    const { status, notes } = body;
-
+    
     if (isNaN(orderId)) {
       return NextResponse.json(
         { error: 'ID de commande invalide' },
@@ -67,8 +62,12 @@ export async function PATCH(
       );
     }
 
-    // Valider le statut si fourni
-    if (status && !Object.values(OrderStatus).includes(status)) {
+    const body = await request.json();
+    const { status, notes } = body;
+
+    // Validation du statut
+    const validStatuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED'];
+    if (status && !validStatuses.includes(status)) {
       return NextResponse.json(
         { error: 'Statut de commande invalide' },
         { status: 400 }
@@ -92,7 +91,7 @@ export async function PATCH(
       where: { id: orderId },
       data: {
         ...(status && { status }),
-        ...(notes !== undefined && { notes }),
+        ...(notes && { notes }),
         updatedAt: new Date()
       },
       include: {
@@ -118,12 +117,12 @@ export async function PATCH(
 // DELETE /api/orders/[id] - Annuler une commande
 export async function DELETE(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params;
+    const { id } = await params;
     const orderId = parseInt(id);
-
+    
     if (isNaN(orderId)) {
       return NextResponse.json(
         { error: 'ID de commande invalide' },
@@ -131,7 +130,7 @@ export async function DELETE(
       );
     }
 
-    // Vérifier que la commande existe et peut être annulée
+    // Vérifier que la commande existe
     const existingOrder = await prisma.order.findUnique({
       where: { id: orderId }
     });
@@ -143,14 +142,7 @@ export async function DELETE(
       );
     }
 
-    if (existingOrder.status === 'DELIVERED' || existingOrder.status === 'CANCELLED') {
-      return NextResponse.json(
-        { error: 'Cette commande ne peut pas être annulée' },
-        { status: 400 }
-      );
-    }
-
-    // Marquer la commande comme annulée
+    // Marquer comme annulée au lieu de supprimer
     const cancelledOrder = await prisma.order.update({
       where: { id: orderId },
       data: {
@@ -167,7 +159,10 @@ export async function DELETE(
       }
     });
 
-    return NextResponse.json(cancelledOrder);
+    return NextResponse.json({ 
+      message: 'Commande annulée avec succès',
+      order: cancelledOrder
+    });
   } catch (error) {
     console.error('Erreur lors de l\'annulation de la commande:', error);
     return NextResponse.json(

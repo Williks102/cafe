@@ -1,40 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { CreateOrderRequest, OrderStatus } from '@/types';
-import { Prisma } from '@prisma/client';
-
-// Types Prisma pour éviter les conflits
-type OrderWithRelations = Prisma.OrderGetPayload<{
-  include: {
-    customer: true;
-    orderItems: {
-      include: {
-        product: true;
-      };
-    };
-  };
-}>;
-
-type ProductFromDB = Prisma.ProductGetPayload<{}>;
 
 // GET /api/orders - Récupérer toutes les commandes
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const statusParam = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
-
-    // Validation du statut si fourni
-    let status: OrderStatus | undefined;
-    if (statusParam && Object.values(OrderStatus).includes(statusParam as OrderStatus)) {
-      status = statusParam as OrderStatus;
-    }
-
-    const where = status ? { status } : {};
-
-    const orders: OrderWithRelations[] = await prisma.order.findMany({
-      where,
+    const orders = await prisma.order.findMany({
       include: {
         customer: true,
         orderItems: {
@@ -45,18 +15,10 @@ export async function GET(request: Request) {
       },
       orderBy: {
         createdAt: 'desc'
-      },
-      take: limit,
-      skip: offset
+      }
     });
 
-    const totalCount = await prisma.order.count({ where });
-
-    return NextResponse.json({
-      orders,
-      totalCount,
-      hasMore: offset + limit < totalCount
-    });
+    return NextResponse.json({ orders });
   } catch (error) {
     console.error('Erreur lors de la récupération des commandes:', error);
     return NextResponse.json(
@@ -69,195 +31,118 @@ export async function GET(request: Request) {
 // POST /api/orders - Créer une nouvelle commande
 export async function POST(request: Request) {
   try {
-    const body: CreateOrderRequest = await request.json();
-    const { customerName, customerEmail, customerPhone, items, notes } = body;
+    const body = await request.json();
+    const { customerName, customerEmail, customerPhone, customerAddress, items, notes, source = 'landing_page' } = body;
 
     // Validation des données
-    if (!customerName || !customerPhone || !items || items.length === 0) {
+    if (!customerName || !customerPhone) {
       return NextResponse.json(
-        { error: 'Informations client et articles requis' },
+        { error: 'Le nom et le téléphone du client sont requis' },
         { status: 400 }
       );
     }
 
-    // Validation du format du téléphone ivoirien (plus flexible)
-    const cleanPhone = customerPhone.replace(/[\s\-\.]/g, '');
-    const phoneRegex = /^(\+225|225)?[0-9]{8,10}$/;
-    if (!phoneRegex.test(cleanPhone)) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
-        { error: 'Format de téléphone invalide. Utilisez le format: +225 XX XX XX XX XX ou 07 XX XX XX XX' },
+        { error: 'Au moins un article doit être commandé' },
         { status: 400 }
       );
     }
 
-    // Vérifier que tous les produits existent et sont disponibles
-    const productIds = items.map(item => item.productId);
-    const products: ProductFromDB[] = await prisma.product.findMany({
+    // Créer ou trouver le client
+    let customer;
+    const existingCustomer = await prisma.customer.findFirst({
       where: {
-        id: { in: productIds },
-        available: true
+        phone: customerPhone
       }
     });
 
-    if (products.length !== productIds.length) {
-      return NextResponse.json(
-        { error: 'Un ou plusieurs produits neimport { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { CreateOrderRequest, OrderStatus } from '@/types';
-import { Prisma } from '@prisma/client';
-
-// Types Prisma pour éviter les conflits
-type OrderWithRelations = Prisma.OrderGetPayload<{
-  include: {
-    customer: true;
-    orderItems: {
-      include: {
-        product: true;
-      };
-    };
-  };
-}>;
-
-type ProductFromDB = Prisma.ProductGetPayload<{}>;
-
-// GET /api/orders - Récupérer toutes les commandes
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const statusParam = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
-
-    // Validation du statut si fourni
-    let status: OrderStatus | undefined;
-    if (statusParam && Object.values(OrderStatus).includes(statusParam as OrderStatus)) {
-      status = statusParam as OrderStatus;
-    }
-
-    const where = status ? { status } : {};
-
-    const orders: OrderWithRelations[] = await prisma.order.findMany({
-      where,
-      include: {
-        customer: true,
-        orderItems: {
-          include: {
-            product: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: limit,
-      skip: offset
-    });
-
-    const totalCount = await prisma.order.count({ where });
-
-    return NextResponse.json({
-      orders,
-      totalCount,
-      hasMore: offset + limit < totalCount
-    });
-  } catch (error) {
-    console.error('Erreur lors de la récupération des commandes:', error);
-    return NextResponse.json(
-      { error: 'Erreur serveur lors de la récupération des commandes' },
-      { status: 500 }
-    );
-  }
-}
-
-// POST /api/orders - Créer une nouvelle commande
-export async function POST(request: Request) {
-  try {
-    const body: CreateOrderRequest = await request.json();
-    const { customerName, customerEmail, customerPhone, items, notes } = body;
-
-    // Validation des données
-    if (!customerName || !customerPhone || !items || items.length === 0) {
-      return NextResponse.json(
-        { error: 'Informations client et articles requis' },
-        { status: 400 }
-      );
-    }
-
-    // Validation du format du téléphone ivoirien (plus flexible)
-    const cleanPhone = customerPhone.replace(/[\s\-\.]/g, '');
-    const phoneRegex = /^(\+225|225)?[0-9]{8,10}$/;
-    if (!phoneRegex.test(cleanPhone)) {
-      return NextResponse.json(
-        { error: 'Format de téléphone invalide. Utilisez le format: +225 XX XX XX XX XX ou 07 XX XX XX XX' },
-        { status: 400 }
-      );
-    }
-
-    // Vérifier que tous les produits existent et sont disponibles
-    const productIds = items.map(item => item.productId);
-    const products: ProductFromDB[] = await prisma.product.findMany({
-      where: {
-        id: { in: productIds },
-        available: true
-      }
-    });
-
-    if (products.length !== productIds.length) {
-      return NextResponse.json(
-        { error: 'Un ou plusieurs produits ne sont pas disponibles' },
-        { status: 400 }
-      );
-    }
-
-    // Calculer le prix total
-    let totalPrice = 0;
-    const orderItemsData = items.map(item => {
-      const product = products.find((p: ProductFromDB) => p.id === item.productId);
-      if (!product) {
-        throw new Error(`Produit ${item.productId} non trouvé`);
-      }
-      const itemTotal = product.price * item.quantity;
-      totalPrice += itemTotal;
-      return {
-        productId: item.productId,
-        quantity: item.quantity,
-        price: product.price
-      };
-    });
-
-    // Créer ou récupérer le client
-    let customer = await prisma.customer.findUnique({
-      where: { phone: customerPhone }
-    });
-
-    if (!customer) {
-      customer = await prisma.customer.create({
+    if (existingCustomer) {
+      // Mettre à jour les infos du client si nécessaire
+      customer = await prisma.customer.update({
+        where: { id: existingCustomer.id },
         data: {
           name: customerName,
-          email: customerEmail || null,
-          phone: customerPhone
+          email: customerEmail || existingCustomer.email,
         }
       });
     } else {
-      // Mettre à jour les informations du client si nécessaire
-      customer = await prisma.customer.update({
-        where: { id: customer.id },
+      // Créer un nouveau client
+      customer = await prisma.customer.create({
         data: {
           name: customerName,
-          email: customerEmail || customer.email
+          email: customerEmail,
+          phone: customerPhone
         }
       });
     }
 
-    // Créer la commande avec les articles
+    // Calculer le prix total et valider les produits
+    let totalPrice = 0;
+    const validatedItems = [];
+
+    for (const item of items) {
+      if (item.productId) {
+        // Produit existant - vérifier s'il existe
+        const product = await prisma.product.findUnique({
+          where: { id: item.productId }
+        });
+
+        if (!product) {
+          return NextResponse.json(
+            { error: `Produit avec l'ID ${item.productId} non trouvé` },
+            { status: 400 }
+          );
+        }
+
+        const itemTotal = product.price * item.quantity;
+        totalPrice += itemTotal;
+        
+        validatedItems.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: product.price
+        });
+      } else if (item.productName && item.price) {
+        // Produit personnalisé des landing pages
+        const itemTotal = item.price * item.quantity;
+        totalPrice += itemTotal;
+
+        // Créer un produit temporaire pour les landing pages
+        const tempProduct = await prisma.product.create({
+          data: {
+            name: item.productName,
+            description: item.description || `Produit commandé via ${source}`,
+            image: item.image || 'https://via.placeholder.com/400x400?text=Produit',
+            price: item.price,
+            category: item.category || 'Landing Page',
+            available: false, // Produit temporaire, pas visible dans le catalogue
+            stock: 0
+          }
+        });
+
+        validatedItems.push({
+          productId: tempProduct.id,
+          quantity: item.quantity,
+          price: item.price
+        });
+      } else {
+        return NextResponse.json(
+          { error: 'Informations produit invalides' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Créer la commande
     const order = await prisma.order.create({
       data: {
         customerId: customer.id,
+        status: 'PENDING',
         totalPrice,
-        notes,
-        status: OrderStatus.PENDING,
+        notes: notes || `Commande passée via ${source}. Adresse: ${customerAddress || 'Non spécifiée'}`,
         orderItems: {
-          create: orderItemsData
+          create: validatedItems
         }
       },
       include: {

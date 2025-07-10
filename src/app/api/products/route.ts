@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/products - Récupérer tous les produits
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const isAdmin = searchParams.get('admin') === 'true';
+    
     const products = await prisma.product.findMany({
-      where: {
+      where: isAdmin ? {} : {
         available: true
       },
       orderBy: {
@@ -27,7 +30,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, description, image, price, category } = body;
+    const { name, description, image, price, category, available = true, stock = 0 } = body;
 
     // Validation des données
     if (!name || !description || !image || !price) {
@@ -51,7 +54,8 @@ export async function POST(request: Request) {
         image,
         price,
         category: category || null,
-        available: true
+        available: Boolean(available),
+        stock: Number(stock) || 0
       }
     });
 
