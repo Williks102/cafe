@@ -5,6 +5,42 @@ import { prisma } from '@/lib/prisma'
 import { Coffee, ShoppingBag, Clock, User } from 'lucide-react'
 import Header from '@/components/Header'
 
+// Interfaces TypeScript qui correspondent exactement au schema Prisma
+interface OrderItem {
+  id: number;
+  quantity: number;
+  price: number;
+  product: {
+    id: number;
+    name: string;
+    description: string;
+    image: string;
+    price: number;
+    category: string | null;  // ← string | null du schema
+    available: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+}
+
+interface Order {
+  id: number;
+  customerId: number | null;  // ← Ajout du champ manquant
+  userId: string | null;      // ← Ajout du champ manquant
+  status: string;
+  totalPrice: number;
+  notes: string | null;       // ← string | null du schema
+  createdAt: Date;
+  updatedAt: Date;           // ← Ajout du champ manquant
+  orderItems: OrderItem[];
+}
+
+interface TotalSpentResult {
+  _sum: {
+    totalPrice: number | null;
+  };
+}
+
 export default async function DashboardPage() {
   const session = await auth()
   
@@ -12,7 +48,7 @@ export default async function DashboardPage() {
     redirect('/auth/signin')
   }
 
-  // Récupérer les commandes de l'utilisateur
+  // Récupérer les commandes de l'utilisateur - Prisma infère automatiquement les types
   const orders = await prisma.order.findMany({
     where: {
       userId: session.user.id
@@ -30,12 +66,12 @@ export default async function DashboardPage() {
     take: 5 // Les 5 dernières commandes
   })
 
-  // Statistiques utilisateur
-  const totalOrders = await prisma.order.count({
+  // Statistiques utilisateur avec types
+  const totalOrders: number = await prisma.order.count({
     where: { userId: session.user.id }
   })
 
-  const totalSpent = await prisma.order.aggregate({
+  const totalSpent: TotalSpentResult = await prisma.order.aggregate({
     where: { 
       userId: session.user.id,
       status: { not: 'CANCELLED' }
@@ -45,11 +81,11 @@ export default async function DashboardPage() {
     }
   })
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('fr-FR').format(price) + ' CFA'
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): string => {
     switch (status) {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800'
       case 'CONFIRMED': return 'bg-blue-100 text-blue-800'
@@ -61,7 +97,7 @@ export default async function DashboardPage() {
     }
   }
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: string): string => {
     switch (status) {
       case 'PENDING': return 'En attente'
       case 'CONFIRMED': return 'Confirmée'

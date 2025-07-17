@@ -3,6 +3,38 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
+// Interfaces corrigées avec les bons types Prisma
+interface OrderItem {
+  id: number;
+  quantity: number;
+  price: number;
+  product: {
+    id: number;
+    name: string;
+    category?: string | null;
+    image: string;
+    createdAt: Date;
+    updatedAt: Date;
+    available: boolean;
+  };
+}
+
+interface Order {
+  id: number;
+  status: string;
+  totalPrice: number;
+  createdAt: Date;  // ← Date au lieu de string
+  updatedAt: Date;  // ← Date au lieu de string
+  orderItems: OrderItem[];
+}
+
+interface OrderStats {
+  totalOrders: number;
+  deliveredOrders: number;
+  totalSpent: number;
+  pendingOrders: number;
+}
+
 export async function GET() {
   try {
     const session = await auth();
@@ -14,7 +46,7 @@ export async function GET() {
       );
     }
 
-    // Récupérer seulement les commandes de l'utilisateur connecté
+    // Récupérer les commandes (Prisma retourne des Date)
     const orders = await prisma.order.findMany({
       where: {
         userId: session.user.id
@@ -31,8 +63,8 @@ export async function GET() {
       }
     });
 
-    // Statistiques utilisateur
-    const stats = {
+    // Statistiques
+    const stats: OrderStats = {
       totalOrders: orders.length,
       deliveredOrders: orders.filter(o => o.status === 'DELIVERED').length,
       totalSpent: orders.reduce((total, order) => 
