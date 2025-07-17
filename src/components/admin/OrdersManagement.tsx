@@ -14,22 +14,29 @@ import {
   Phone,
   Mail,
   Calendar,
-  Package
+  Package,
+  User
 } from "lucide-react";
 
 interface Order {
   id: number;
-  customerId: number;
+  customerId?: number;
+  userId?: string;
   status: string;
   totalPrice: number;
   notes?: string;
   createdAt: string;
   updatedAt: string;
-  customer: {
+  customer?: {
     id: number;
     name: string;
     email?: string;
     phone: string;
+  };
+  user?: {
+    id: string;
+    name: string;
+    email: string;
   };
   orderItems: Array<{
     id: number;
@@ -131,12 +138,38 @@ export default function OrdersManagement() {
     });
   };
 
+  // Fonction utilitaire pour obtenir les infos client/utilisateur
+  const getClientInfo = (order: Order) => {
+    if (order.customer) {
+      return {
+        name: order.customer.name,
+        email: order.customer.email,
+        phone: order.customer.phone,
+        type: 'guest'
+      };
+    } else if (order.user) {
+      return {
+        name: order.user.name,
+        email: order.user.email,
+        phone: 'Non renseigné',
+        type: 'user'
+      };
+    }
+    return {
+      name: 'Client inconnu',
+      email: '',
+      phone: 'Non renseigné',
+      type: 'unknown'
+    };
+  };
+
   // Filtrer les commandes
   const filteredOrders = orders.filter(order => {
     const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
+    const clientInfo = getClientInfo(order);
     const matchesSearch = searchTerm === '' || 
-      order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.phone.includes(searchTerm) ||
+      clientInfo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      clientInfo.phone.includes(searchTerm) ||
       order.id.toString().includes(searchTerm);
     
     return matchesStatus && matchesSearch;
@@ -228,86 +261,97 @@ export default function OrdersManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">#{order.id}</div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="font-medium text-gray-900">{order.customer.name}</div>
-                        <div className="text-sm text-gray-500 flex items-center gap-1">
-                          <Phone className="w-3 h-3" />
-                          {order.customer.phone}
-                        </div>
-                        {order.customer.email && (
-                          <div className="text-sm text-gray-500 flex items-center gap-1">
-                            <Mail className="w-3 h-3" />
-                            {order.customer.email}
+                {filteredOrders.map((order) => {
+                  const clientInfo = getClientInfo(order);
+                  return (
+                    <tr key={order.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-900">#{order.id}</div>
+                      </td>
+                      
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900">{clientInfo.name}</span>
+                            {clientInfo.type === 'user' && (
+                              <span className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                                <User className="w-3 h-3 mr-1" />
+                                Membre
+                              </span>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className="text-sm">
-                        {order.orderItems.length} article{order.orderItems.length > 1 ? 's' : ''}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {order.orderItems.slice(0, 2).map(item => item.product.name).join(', ')}
-                        {order.orderItems.length > 2 && '...'}
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">
-                        {formatPrice(order.totalPrice)}
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[order.status as keyof typeof statusColors]}`}>
-                        {statusLabels[order.status as keyof typeof statusLabels]}
-                      </span>
-                    </td>
-                    
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(order.createdAt)}
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedOrder(order)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        
-                        {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
-                          <select
-                            value={order.status}
-                            onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                            disabled={updating === order.id}
-                            className="text-xs border rounded px-2 py-1"
+                          <div className="text-sm text-gray-500 flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {clientInfo.phone}
+                          </div>
+                          {clientInfo.email && (
+                            <div className="text-sm text-gray-500 flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {clientInfo.email}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      
+                      <td className="px-6 py-4">
+                        <div className="text-sm">
+                          {order.orderItems.length} article{order.orderItems.length > 1 ? 's' : ''}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {order.orderItems.slice(0, 2).map(item => item.product.name).join(', ')}
+                          {order.orderItems.length > 2 && '...'}
+                        </div>
+                      </td>
+                      
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-900">
+                          {formatPrice(order.totalPrice)}
+                        </div>
+                      </td>
+                      
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[order.status as keyof typeof statusColors]}`}>
+                          {statusLabels[order.status as keyof typeof statusLabels]}
+                        </span>
+                      </td>
+                      
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(order.createdAt)}
+                        </div>
+                      </td>
+                      
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedOrder(order)}
                           >
-                            <option value="PENDING">En attente</option>
-                            <option value="CONFIRMED">Confirmée</option>
-                            <option value="PREPARING">En préparation</option>
-                            <option value="READY">Prête</option>
-                            <option value="DELIVERED">Livrée</option>
-                            <option value="CANCELLED">Annulée</option>
-                          </select>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          
+                          {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+                            <select
+                              value={order.status}
+                              onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                              disabled={updating === order.id}
+                              className="text-xs border rounded px-2 py-1"
+                            >
+                              <option value="PENDING">En attente</option>
+                              <option value="CONFIRMED">Confirmée</option>
+                              <option value="PREPARING">En préparation</option>
+                              <option value="READY">Prête</option>
+                              <option value="DELIVERED">Livrée</option>
+                              <option value="CANCELLED">Annulée</option>
+                            </select>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -334,16 +378,22 @@ export default function OrdersManagement() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Nom</Label>
-                    <p className="font-medium">{selectedOrder.customer.name}</p>
+                    <p className="font-medium">{getClientInfo(selectedOrder).name}</p>
+                  </div>
+                  <div>
+                    <Label>Type</Label>
+                    <p className="font-medium">
+                      {getClientInfo(selectedOrder).type === 'user' ? 'Membre connecté' : 'Client invité'}
+                    </p>
                   </div>
                   <div>
                     <Label>Téléphone</Label>
-                    <p className="font-medium">{selectedOrder.customer.phone}</p>
+                    <p className="font-medium">{getClientInfo(selectedOrder).phone}</p>
                   </div>
-                  {selectedOrder.customer.email && (
-                    <div className="md:col-span-2">
+                  {getClientInfo(selectedOrder).email && (
+                    <div>
                       <Label>Email</Label>
-                      <p className="font-medium">{selectedOrder.customer.email}</p>
+                      <p className="font-medium">{getClientInfo(selectedOrder).email}</p>
                     </div>
                   )}
                 </div>

@@ -10,6 +10,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ========================================
+// MODÈLES AUTH.JS (Authentification)
+// ========================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  password      String?   // Pour l'auth par email/password
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  accounts      Account[]
+  sessions      Session[]
+  
+  // Relations avec tes modèles existants
+  orders        Order[]   // Un utilisateur peut avoir plusieurs commandes
+
+  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+// ========================================
+// TES MODÈLES EXISTANTS (modifiés)
+// ========================================
+
 model Product {
   id          Int      @id @default(autoincrement())
   name        String   @db.VarChar(255)
@@ -18,12 +85,11 @@ model Product {
   price       Int      // Prix en CFA (centimes)
   category    String?  @db.VarChar(100)
   available   Boolean  @default(true)
-  stock       Int      @default(0)    // Nouveau: Gestion du stock
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
+  
   orderItems OrderItem[]
-
+  
   @@map("products")
 }
 
@@ -34,24 +100,27 @@ model Customer {
   phone     String   @unique @db.VarChar(20)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  
   orders Order[]
-
+  
   @@map("customers")
 }
 
 model Order {
   id         Int         @id @default(autoincrement())
-  customerId Int
+  customerId Int?        // Optionnel pour les commandes invités
+  userId     String?     // Lien vers User authentifié (optionnel)
   status     OrderStatus @default(PENDING)
   totalPrice Int         // Prix total en CFA (centimes)
   notes      String?     @db.Text
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
-
-  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  customer   Customer?   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   orderItems OrderItem[]
-
+  
   @@map("orders")
 }
 
@@ -61,12 +130,16 @@ model OrderItem {
   productId Int
   quantity  Int
   price     Int // Prix unitaire au moment de la commande
-
+  
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-
+  
   @@map("order_items")
 }
+
+// ========================================
+// ENUMS
+// ========================================
 
 enum OrderStatus {
   PENDING    // En attente
@@ -75,4 +148,10 @@ enum OrderStatus {
   READY      // Prête
   DELIVERED  // Livrée
   CANCELLED  // Annulée
+}
+
+enum UserRole {
+  USER       // Client normal
+  ADMIN      // Administrateur
+  STAFF      // Personnel du café
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Coffee, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Header from "@/components/Header";
 
 // Import des composants admin
 import AdminStats from "@/components/admin/AdminStats";
@@ -20,16 +21,16 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      {/* Header avec dropdown d'authentification */}
+      <Header showCart={false} />
+
+      {/* Section admin (remplace l'ancien header) */}
+      <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <Coffee className="w-8 h-8 text-amber-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Console Admin</h1>
-                <p className="text-gray-600">Café Délice - Gestion complète</p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Console Admin</h1>
+              <p className="text-gray-600">Moses Café - Gestion complète</p>
             </div>
             <Button onClick={handleRefresh} variant="outline" className="gap-2">
               <RefreshCw className="w-4 h-4" />
@@ -37,8 +38,9 @@ export default function AdminPage() {
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
+      {/* Contenu admin */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Statistiques globales */}
         <AdminStats />

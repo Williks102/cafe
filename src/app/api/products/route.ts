@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         price,
         category: category || null,
         available: Boolean(available),
-        stock: Number(stock) || 0
+        
       }
     });
 
