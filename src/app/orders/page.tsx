@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Coffee, ShoppingBag, Clock, ArrowLeft, Package, Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Link from 'next/link';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 interface OrderItem {
   id: number;
@@ -44,6 +45,8 @@ interface OrdersData {
 }
 
 export default function OrdersPage() {
+
+  useOrderNotifications();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [ordersData, setOrdersData] = useState<OrdersData | null>(null);

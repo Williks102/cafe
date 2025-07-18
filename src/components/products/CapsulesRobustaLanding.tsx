@@ -37,7 +37,7 @@ export default function CapsulesRobustaLanding() {
   const handleOrder = () => {
     const total = pricePerBox * quantity;
     
-    alert(`✅ Commande enregistrée !\n\n${quantity}x Boîte${quantity > 1 ? 's' : ''} Capsules Robusta (${quantity * 10} capsules)\nTotal: ${formatPrice(total)}\n\nNous vous contacterons au ${form.phone} pour confirmer votre commande.\n\n🔍 Suivez votre commande sur mosescafe.com/suivi`);
+    alert(`✅ Commande enregistrée !\n\n${quantity}x Boîte${quantity > 1 ? 's' : ''} Capsules Robusta (${quantity * 10} capsules)\nTotal: ${formatPrice(total)}\n\nNous vous contacterons au ${form.phone} pour confirmer votre commande.\n\n🔍 Suivez votre commande sur mosescafe.ci/suivi`);
     
     setShowModal(false);
     setForm({ name: "", email: "", phone: "", address: "" });

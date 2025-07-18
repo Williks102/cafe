@@ -7,7 +7,6 @@ export interface Product {
   price: number;
   category: string; // Changed from string | null to string
   available: boolean;
-  stock?: number;
   createdAt: string;
   updatedAt: string;
 }

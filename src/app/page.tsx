@@ -11,12 +11,14 @@ import { Minus, Plus, ShoppingCart, X, Coffee, Loader2 } from "lucide-react";
 import { Product, CreateOrderRequest } from "@/types";
 import AuthOrderModal from "@/components/AuthOrderModal";
 import Header from "@/components/Header";
+import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 
 interface CartItem extends Product {
   quantity: number;
 }
 
 export default function CoffeeShopApp() {
+  useOrderNotifications()
   // États pour les produits et filtres
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, description, image, price, category, available = true, stock = 0 } = body;
+    const { name, description, image, price, category, available = true } = body;
 
     // Validation des données
     if (!name || !description || !image || !price) {

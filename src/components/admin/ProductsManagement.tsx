@@ -196,13 +196,7 @@ export default function ProductsManagement() {
                   </div>
 
                   {/* Stock si disponible */}
-                  {product.stock !== undefined && (
-                    <div className="mb-3">
-                      <span className="text-xs text-gray-500">
-                        Stock: {product.stock}
-                      </span>
-                    </div>
-                  )}
+                 
                   
                   <div className="flex gap-2">
                     <EditProductForm 

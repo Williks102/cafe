@@ -1,9 +1,10 @@
-// app/dashboard/page.tsx
+"use client";
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { Coffee, ShoppingBag, Clock, User } from 'lucide-react'
 import Header from '@/components/Header'
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 // Interfaces TypeScript qui correspondent exactement au schema Prisma
 interface OrderItem {
@@ -42,6 +43,7 @@ interface TotalSpentResult {
 }
 
 export default async function DashboardPage() {
+  useOrderNotifications()
   const session = await auth()
   
   if (!session) {
