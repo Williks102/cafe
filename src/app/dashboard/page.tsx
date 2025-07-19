@@ -115,53 +115,53 @@ export default async function DashboardPage() {
     <>
       <Header showCart={false} />
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Bonjour, {session.user?.name?.split(' ')[0]} ! 👋
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
               Voici un aperçu de votre activité chez Moses Café
             </p>
           </div>
 
           {/* Statistiques */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
               <div className="flex items-center">
-                <div className="h-12 w-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <ShoppingBag className="h-6 w-6 text-amber-600" />
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total commandes</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalOrders}</p>
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Total commandes</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{totalOrders}</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
               <div className="flex items-center">
-                <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Coffee className="h-6 w-6 text-green-600" />
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Coffee className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Montant dépensé</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Montant dépensé</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
                     {formatPrice(totalSpent._sum.totalPrice || 0)}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
               <div className="flex items-center">
-                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <User className="h-6 w-6 text-blue-600" />
+                <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Membre depuis</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Membre depuis</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">
                     {new Date(session.user.createdAt || '').toLocaleDateString('fr-FR', { 
                       month: 'short', 
                       year: 'numeric' 
@@ -173,24 +173,24 @@ export default async function DashboardPage() {
           </div>
 
           {/* Actions rapides */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-6 text-white">
-              <h3 className="text-xl font-bold mb-2">Nouvelle commande</h3>
-              <p className="mb-4 opacity-90">Découvrez nos délicieux cafés et pâtisseries</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-4 sm:p-6 text-white">
+              <h3 className="text-lg sm:text-xl font-bold mb-2">Nouvelle commande</h3>
+              <p className="mb-3 sm:mb-4 opacity-90 text-sm sm:text-base">Découvrez nos délicieux cafés et pâtisseries</p>
               <a
                 href="/menu"
-                className="inline-flex items-center px-4 py-2 bg-white text-amber-600 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-white text-amber-600 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm sm:text-base"
               >
                 Voir le menu
               </a>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl p-6 text-white">
-              <h3 className="text-xl font-bold mb-2">Historique complet</h3>
-              <p className="mb-4 opacity-90">Consultez toutes vos commandes passées</p>
+            <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl p-4 sm:p-6 text-white">
+              <h3 className="text-lg sm:text-xl font-bold mb-2">Historique complet</h3>
+              <p className="mb-3 sm:mb-4 opacity-90 text-sm sm:text-base">Consultez toutes vos commandes passées</p>
               <a
                 href="/orders"
-                className="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm sm:text-base"
               >
                 Voir tout
               </a>
@@ -199,17 +199,17 @@ export default async function DashboardPage() {
 
           {/* Commandes récentes */}
           <div className="bg-white rounded-xl shadow-sm">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Commandes récentes</h2>
+            <div className="p-4 sm:p-6 border-b border-gray-200">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Commandes récentes</h2>
             </div>
             
             {orders.length === 0 ? (
-              <div className="p-6 text-center">
-                <Coffee className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 mb-4">Aucune commande pour le moment</p>
+              <div className="p-4 sm:p-6 text-center">
+                <Coffee className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+                <p className="text-gray-500 mb-3 sm:mb-4 text-sm sm:text-base">Aucune commande pour le moment</p>
                 <a
                   href="/menu"
-                  className="inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 transition-colors"
+                  className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 transition-colors text-sm sm:text-base"
                 >
                   Passer ma première commande
                 </a>
@@ -217,43 +217,45 @@ export default async function DashboardPage() {
             ) : (
               <div className="divide-y divide-gray-200">
                 {orders.map((order) => (
-                  <div key={order.id} className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="h-10 w-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                          <ShoppingBag className="h-5 w-5 text-amber-600" />
+                  <div key={order.id} className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-3">
+                      <div className="flex items-center space-x-3 sm:space-x-4">
+                        <div className="h-8 w-8 sm:h-10 sm:w-10 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                          <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">Commande #{order.id}</p>
-                          <p className="text-sm text-gray-500 flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
-                            {new Date(order.createdAt).toLocaleDateString('fr-FR', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-gray-900 text-sm sm:text-base">Commande #{order.id}</p>
+                          <p className="text-xs sm:text-sm text-gray-500 flex items-center">
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 shrink-0" />
+                            <span className="truncate">
+                              {new Date(order.createdAt).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                      <div className="text-left sm:text-right">
+                        <span className={`inline-flex items-center px-2 py-1 sm:px-2.5 sm:py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                           {getStatusText(order.status)}
                         </span>
-                        <p className="text-lg font-bold text-gray-900 mt-1">
+                        <p className="text-lg sm:text-lg font-bold text-gray-900 mt-1">
                           {formatPrice(order.totalPrice)}
                         </p>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1 sm:space-y-2">
                       {order.orderItems.map((item) => (
-                        <div key={item.id} className="flex justify-between items-center text-sm">
-                          <span className="text-gray-600">
+                        <div key={item.id} className="flex justify-between items-center text-xs sm:text-sm">
+                          <span className="text-gray-600 truncate pr-2">
                             {item.quantity}x {item.product.name}
                           </span>
-                          <span className="text-gray-900">
+                          <span className="text-gray-900 font-medium shrink-0">
                             {formatPrice(item.price * item.quantity)}
                           </span>
                         </div>
@@ -261,8 +263,8 @@ export default async function DashboardPage() {
                     </div>
 
                     {order.notes && (
-                      <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-gray-600">
+                      <div className="mt-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs sm:text-sm text-gray-600">
                           <span className="font-medium">Note: </span>
                           {order.notes}
                         </p>

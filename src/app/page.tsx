@@ -127,10 +127,10 @@ export default function CoffeeShopApp() {
   // Affichage de chargement
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center px-4">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-amber-600" />
-          <p className="text-lg text-gray-600">Chargement des produits...</p>
+          <Loader2 className="w-8 h-8 sm:w-12 sm:h-12 animate-spin mx-auto mb-4 text-amber-600" />
+          <p className="text-base sm:text-lg text-gray-600">Chargement des produits...</p>
         </div>
       </div>
     );
@@ -139,12 +139,12 @@ export default function CoffeeShopApp() {
   // Affichage d'erreur
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
-            <h2 className="text-xl font-bold mb-2">❌ Erreur</h2>
-            <p>{error}</p>
-            <Button onClick={fetchProducts} className="mt-4 bg-amber-600 hover:bg-amber-700">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center px-4">
+        <div className="text-center w-full max-w-md">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-4 sm:px-6 rounded-lg">
+            <h2 className="text-lg sm:text-xl font-bold mb-2">❌ Erreur</h2>
+            <p className="text-sm sm:text-base">{error}</p>
+            <Button onClick={fetchProducts} className="mt-4 bg-amber-600 hover:bg-amber-700 w-full sm:w-auto">
               Réessayer
             </Button>
           </div>
@@ -163,28 +163,28 @@ export default function CoffeeShopApp() {
       />
 
       {/* Hero Section */}
-      <section className="text-center py-20 px-4">
-        <h1 className="text-6xl font-bold mb-6 text-gray-800">
+      <section className="text-center py-12 sm:py-16 lg:py-20 px-4">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-gray-800 leading-tight">
           CAFÉ D'EXCEPTION
         </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-xl lg:max-w-2xl mx-auto leading-relaxed">
           Découvrez notre sélection de cafés premium torréfiés artisanalement. 
           Chaque tasse raconte une histoire, chaque gorgée est un voyage.
         </p>
       </section>
 
       {/* Produits */}
-      <section className="py-16 px-4 max-w-7xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">
+      <section className="py-8 sm:py-12 lg:py-16 px-4 max-w-7xl mx-auto">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-gray-800">
           Notre Sélection
         </h2>
 
         {/* Filtres par catégorie */}
         {products.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8 sm:mb-12">
             <button
               onClick={() => setSelectedCategory('ALL')}
-              className={`px-6 py-3 rounded-full font-medium transition-all ${
+              className={`px-3 py-2 sm:px-6 sm:py-3 rounded-full font-medium transition-all text-xs sm:text-sm ${
                 selectedCategory === 'ALL'
                   ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg'
                   : 'bg-white text-gray-700 hover:bg-red-50 border border-gray-200'
@@ -198,7 +198,7 @@ export default function CoffeeShopApp() {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-6 py-3 rounded-full font-medium transition-all ${
+                  className={`px-3 py-2 sm:px-6 sm:py-3 rounded-full font-medium transition-all text-xs sm:text-sm ${
                     selectedCategory === category
                       ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg'
                       : 'bg-white text-gray-700 hover:bg-red-50 border border-gray-200'
@@ -212,9 +212,9 @@ export default function CoffeeShopApp() {
         )}
         
         {filteredProducts.length === 0 && !loading ? (
-          <div className="text-center py-12">
-            <Coffee className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg">
+          <div className="text-center py-8 sm:py-12">
+            <Coffee className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-4" />
+            <p className="text-gray-500 text-base sm:text-lg px-4">
               {selectedCategory === 'ALL' 
                 ? 'Aucun produit disponible pour le moment'
                 : `Aucun produit disponible dans la catégorie "${selectedCategory}"`
@@ -231,7 +231,7 @@ export default function CoffeeShopApp() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {filteredProducts.filter(product => product.available).map((product) => (
               <div
                 key={product.id}
@@ -244,25 +244,25 @@ export default function CoffeeShopApp() {
                     alt={product.name} 
                     width={600}
                     height={256}
-                    className="w-full h-64 object-cover hover:scale-110 transition-transform duration-300" 
+                    className="w-full h-48 sm:h-56 lg:h-64 object-cover hover:scale-110 transition-transform duration-300" 
                   />
                   <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-300" />
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2 text-gray-800">{product.name}</h3>
+                <div className="p-4 sm:p-6">
+                  <h3 className="text-lg sm:text-xl font-bold mb-2 text-gray-800 line-clamp-2">{product.name}</h3>
                   {product.category && (
                     <span className="inline-block bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full mb-2">
                       {product.category}
                     </span>
                   )}
-                  <p className="text-gray-600 mb-4 leading-relaxed line-clamp-3">{product.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                  <p className="text-gray-600 mb-4 leading-relaxed line-clamp-3 text-sm sm:text-base">{product.description}</p>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                    <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
                       {formatPrice(product.price)}
                     </span>
                     <Button 
                       size="sm" 
-                      className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
+                      className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white w-full sm:w-auto"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedProduct(product);
@@ -280,32 +280,32 @@ export default function CoffeeShopApp() {
 
       {/* Modal Produit */}
       <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
-        <DialogContent className="max-w-md bg-white">
+        <DialogContent className="max-w-[95vw] sm:max-w-md bg-white">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gray-800">
+            <DialogTitle className="text-lg sm:text-xl font-bold text-gray-800 pr-6">
               Commander : {selectedProduct?.name}
             </DialogTitle>
           </DialogHeader>
 
           {selectedProduct && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <Image 
                 src={selectedProduct.image} 
                 alt={selectedProduct.name}
                 width={400}
                 height={192}
-                className="w-full h-48 object-cover rounded-lg"
+                className="w-full h-40 sm:h-48 object-cover rounded-lg"
               />
               
               <div className="text-center">
-                <p className="text-gray-600 mb-4">{selectedProduct.description}</p>
-                <p className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                <p className="text-gray-600 mb-4 text-sm sm:text-base">{selectedProduct.description}</p>
+                <p className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
                   {formatPrice(selectedProduct.price)}
                 </p>
               </div>
 
-              <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                <Label className="font-medium">Quantité :</Label>
+              <div className="flex items-center justify-between bg-gray-50 p-3 sm:p-4 rounded-lg">
+                <Label className="font-medium text-sm sm:text-base">Quantité :</Label>
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
@@ -327,14 +327,14 @@ export default function CoffeeShopApp() {
                 </div>
               </div>
 
-              <div className="bg-amber-50 p-4 rounded-lg text-center">
-                <p className="text-lg font-semibold text-gray-800">
+              <div className="bg-amber-50 p-3 sm:p-4 rounded-lg text-center">
+                <p className="text-lg sm:text-xl font-semibold text-gray-800">
                   Total: {formatPrice(selectedProduct.price * quantity)}
                 </p>
               </div>
 
               <Button 
-                className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white py-3" 
+                className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white py-3 text-sm sm:text-base" 
                 onClick={handleAddToCart}
               >
                 Ajouter au panier
