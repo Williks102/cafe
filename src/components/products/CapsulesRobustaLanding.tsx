@@ -347,7 +347,7 @@ export default function CapsulesRobustaLanding() {
 
       {/* Modal de Commande */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-[95vw] sm:max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!bg-white max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
               <Coffee className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />

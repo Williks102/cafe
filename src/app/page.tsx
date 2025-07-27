@@ -280,7 +280,7 @@ export default function CoffeeShopApp() {
 
       {/* Modal Produit */}
       <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md bg-white">
+        <DialogContent className="!bg-white max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl font-bold text-gray-800 pr-6">
               Commander : {selectedProduct?.name}

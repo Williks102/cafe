@@ -1,7 +1,8 @@
-// app/api/register/route.ts (nouveau chemin)
+// app/api/register/route.ts
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs"; // Utilisé bcryptjs au lieu de bcrypt
+import bcrypt from "bcryptjs";
+import { MosesCafeEmailService } from "@/lib/email-service";
 
 const prisma = new PrismaClient();
 
@@ -68,8 +69,21 @@ export async function POST(request: Request) {
       }
     });
 
+    // 📧 Envoyer l'email de bienvenue
+    MosesCafeEmailService.sendWelcomeEmail(name, email)
+      .then((result) => {
+        if (result.success) {
+          console.log(`✅ Email de bienvenue envoyé à ${email}`);
+        } else {
+          console.error(`❌ Échec envoi email de bienvenue à ${email}:`, result.error);
+        }
+      })
+      .catch((error) => {
+        console.error(`Exception envoi email de bienvenue:`, error);
+      });
+
     return NextResponse.json({ 
-      message: "Compte créé avec succès",
+      message: "Compte créé avec succès ! Un email de bienvenue vous a été envoyé.",
       user: newUser 
     }, { status: 201 });
 

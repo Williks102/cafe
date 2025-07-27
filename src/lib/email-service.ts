@@ -1,0 +1,271 @@
+import { Resend } from 'resend';
+import { EmailOrderData } from '@/types/email-types';
+import { 
+  generateCustomerOrderTemplate,
+  generateAdminOrderTemplate,
+  generateStatusUpdateTemplate,
+  generateWelcomeTemplate,
+  generatePasswordResetTemplate
+} from './email-templates';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Configuration des emails
+const EMAIL_CONFIG = {
+  from: {
+    customer: 'MosesCafe <noreply@mosescafe.ci>',
+    system: 'Système MosesCafe <system@mosescafe.ci>',
+  },
+  admin: {
+    emails: process.env.ADMIN_EMAILS?.split(',') || [
+      'admin@mosescafe.ci',
+      'commandes@mosescafe.ci',
+    ],
+  },
+  replyTo: 'contact@mosescafe.ci',
+};
+
+export class MosesCafeEmailService {
+  
+  // Envoyer email de confirmation au client
+  static async sendCustomerConfirmation(data: EmailOrderData) {
+  if (!data.customerEmail) {
+    console.log(`Commande #${data.orderId}: Pas d'email client, notification par téléphone uniquement`);
+    return { success: false, reason: 'no_email' };
+  }
+
+  try {
+    const { data: result, error } = await resend.emails.send({
+      from: EMAIL_CONFIG.from.customer,
+      to: [data.customerEmail],
+      replyTo: EMAIL_CONFIG.replyTo,
+      subject: `✅ Commande #${data.orderId} confirmée - MosesCafe`,
+      html: generateCustomerOrderTemplate(data),
+    });
+
+    if (error) {
+      console.error(`Erreur envoi email client #${data.orderId}:`, error);
+      return { success: false, reason: 'email_error' }; // ← Changé de 'error' à 'reason'
+    }
+
+    console.log(`✅ Email confirmation envoyé au client #${data.orderId}:`, result?.id);
+    return { success: true, emailId: result?.id };
+  } catch (error) {
+    console.error(`Exception envoi email client #${data.orderId}:`, error);
+    return { success: false, reason: 'exception' }; // ← Changé de 'error' à 'reason'
+  }
+}
+  // Envoyer notification admin
+  static async sendAdminNotification(data: EmailOrderData) {
+  try {
+    const { data: result, error } = await resend.emails.send({
+      from: EMAIL_CONFIG.from.system,
+      to: EMAIL_CONFIG.admin.emails,
+      replyTo: data.customerEmail || EMAIL_CONFIG.replyTo,
+      subject: `🚨 NOUVELLE COMMANDE #${data.orderId} - ${data.customerName} - ${new Intl.NumberFormat('fr-FR').format(data.totalPrice)} CFA`,
+      html: generateAdminOrderTemplate(data),
+    });
+
+    if (error) {
+      console.error(`Erreur envoi email admin #${data.orderId}:`, error);
+      return { success: false, reason: 'email_error' }; // ← Changé de 'error' à 'reason'
+    }
+
+    console.log(`🚨 Notification admin envoyée #${data.orderId}:`, result?.id);
+    return { success: true, emailId: result?.id };
+  } catch (error) {
+    console.error(`Exception envoi email admin #${data.orderId}:`, error);
+    return { success: false, reason: 'exception' }; // ← Changé de 'error' à 'reason'
+  }
+}
+  // Envoyer mise à jour de statut
+  static async sendStatusUpdate(data: EmailOrderData) {
+    if (!data.customerEmail) return { success: false, reason: 'no_email' };
+
+    const statusMessages = {
+      'PENDING': '⏳ Votre commande est en attente de confirmation',
+      'CONFIRMED': '✅ Votre commande a été confirmée',
+      'PREPARING': '👨‍🍳 Votre commande est en préparation',
+      'READY': '📦 Votre commande est prête',
+      'DELIVERED': '🎉 Votre commande a été livrée',
+      'CANCELLED': '❌ Votre commande a été annulée'
+    };
+
+    const message = statusMessages[data.status];
+    if (!message) {
+      console.error(`Statut non géré: ${data.status}`);
+      return { success: false, reason: 'invalid_status' };
+    }
+
+    // Ne pas envoyer d'email pour PENDING (déjà fait à la création)
+    if (data.status === 'PENDING') {
+      console.log(`Commande #${data.orderId}: Email PENDING ignoré (déjà envoyé à la création)`);
+      return { success: false, reason: 'pending_ignored' };
+    }
+
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: EMAIL_CONFIG.from.customer,
+        to: [data.customerEmail],
+        replyTo: EMAIL_CONFIG.replyTo,
+        subject: `${message} - Commande #${data.orderId}`,
+        html: generateStatusUpdateTemplate(data, message),
+      });
+
+      if (error) {
+        console.error(`Erreur envoi email statut #${data.orderId}:`, error);
+        return { success: false, error };
+      }
+
+      console.log(`📧 Email statut ${data.status} envoyé #${data.orderId}:`, result?.id);
+      return { success: true, emailId: result?.id };
+    } catch (error) {
+      console.error(`Exception envoi email statut #${data.orderId}:`, error);
+      return { success: false, error };
+    }
+  }
+
+  // Envoyer email de bienvenue
+  static async sendWelcomeEmail(userName: string, userEmail: string) {
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: EMAIL_CONFIG.from.customer,
+        to: [userEmail],
+        replyTo: EMAIL_CONFIG.replyTo,
+        subject: `🎉 Bienvenue chez MosesCafe, ${userName} !`,
+        html: generateWelcomeTemplate(userName, userEmail),
+      });
+
+      if (error) {
+        console.error(`Erreur envoi email bienvenue:`, error);
+        return { success: false, error };
+      }
+
+      console.log(`🎉 Email bienvenue envoyé à ${userEmail}:`, result?.id);
+      return { success: true, emailId: result?.id };
+    } catch (error) {
+      console.error(`Exception envoi email bienvenue:`, error);
+      return { success: false, error };
+    }
+  }
+
+  // Envoyer email de réinitialisation de mot de passe
+  static async sendPasswordResetEmail(userName: string, userEmail: string, resetToken: string) {
+    const resetLink = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${resetToken}`;
+    
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: EMAIL_CONFIG.from.customer,
+        to: [userEmail],
+        replyTo: EMAIL_CONFIG.replyTo,
+        subject: `🔐 Réinitialisation de votre mot de passe - MosesCafe`,
+        html: generatePasswordResetTemplate(userName, resetLink),
+      });
+
+      if (error) {
+        console.error(`Erreur envoi email reset password:`, error);
+        return { success: false, error };
+      }
+
+      console.log(`🔐 Email reset password envoyé à ${userEmail}:`, result?.id);
+      return { success: true, emailId: result?.id };
+    } catch (error) {
+      console.error(`Exception envoi email reset password:`, error);
+      return { success: false, error };
+    }
+  }
+
+  // Envoyer plusieurs emails en batch (utile pour les notifications groupées)
+  static async sendBatchEmails(emails: Array<{
+    to: string;
+    subject: string;
+    html: string;
+  }>) {
+    try {
+      const results = await Promise.allSettled(
+        emails.map(email => 
+          resend.emails.send({
+            from: EMAIL_CONFIG.from.customer,
+            to: [email.to],
+            replyTo: EMAIL_CONFIG.replyTo,
+            subject: email.subject,
+            html: email.html,
+          })
+        )
+      );
+
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      console.log(`📧 Batch emails: ${successful} réussis, ${failed} échoués`);
+      
+      return {
+        success: failed === 0,
+        successful,
+        failed,
+        results
+      };
+    } catch (error) {
+      console.error(`Exception envoi batch emails:`, error);
+      return { success: false, error };
+    }
+  }
+  // Méthode pour préparer les données d'email à partir d'une commande
+static prepareEmailData(order: any): EmailOrderData {
+  return {
+    orderId: order.id,
+    customerName: order.customer?.name || order.user?.name || 'Client',
+    customerEmail: order.customer?.email || order.user?.email || null,
+    customerPhone: order.customer?.phone || '',
+    status: order.status,
+    totalPrice: order.totalPrice,
+    notes: order.notes,
+    items: order.orderItems.map((item: any) => ({
+      name: item.product.name,
+      quantity: item.quantity,
+      price: item.price,
+      category: item.product.category
+    })),
+    orderDate: order.createdAt,
+    isUserOrder: !!order.user,
+    userName: order.user?.name || null,
+    userEmail: order.user?.email || null
+  };
+}
+
+  // Méthode utilitaire pour tester la configuration email
+  static async testEmailConfiguration(testEmail: string) {
+    try {
+      const { data: result, error } = await resend.emails.send({
+        from: EMAIL_CONFIG.from.system,
+        to: [testEmail],
+        subject: `🧪 Test de configuration email - MosesCafe`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2>Test de configuration email</h2>
+            <p>Si vous recevez cet email, la configuration est correcte !</p>
+            <p>Configuration actuelle :</p>
+            <ul>
+              <li>From (Customer): ${EMAIL_CONFIG.from.customer}</li>
+              <li>From (System): ${EMAIL_CONFIG.from.system}</li>
+              <li>Admin emails: ${EMAIL_CONFIG.admin.emails.join(', ')}</li>
+              <li>Reply-to: ${EMAIL_CONFIG.replyTo}</li>
+            </ul>
+            <p>Date du test : ${new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan' })}</p>
+          </div>
+        `,
+      });
+
+      if (error) {
+        console.error(`Erreur test email:`, error);
+        return { success: false, error };
+      }
+
+      console.log(`🧪 Email test envoyé à ${testEmail}:`, result?.id);
+      return { success: true, emailId: result?.id };
+    } catch (error) {
+      console.error(`Exception test email:`, error);
+      return { success: false, error };
+    }
+  }
+}

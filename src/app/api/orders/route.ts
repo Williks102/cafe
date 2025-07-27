@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
+import { MosesCafeEmailService } from '@/lib/email-service';
+import { OrderWithFullRelations } from '@/types/email-types';
+
+interface ValidatedOrderItem {
+  productId: number;
+  quantity: number;
+  price: number;
+}
 
 // GET /api/orders - Récupérer toutes les commandes
 export async function GET() {
@@ -80,7 +88,17 @@ export async function POST(request: Request) {
     // 1. Commande utilisateur connecté (items seulement)
     // 2. Commande invité (customerName, customerEmail, customerPhone, items)
     
-    const { customerName, customerEmail, customerPhone, customerAddress, items, notes, source = 'web_app' } = body;
+    const { 
+      customerName, 
+      customerEmail, 
+      customerPhone, 
+      customerAddress, 
+      items, 
+      notes, 
+      source = 'web_app',
+      // Nouveau: préférences de notification
+      notificationPreference = 'email' // 'email', 'sms', 'both', 'none'
+    } = body;
 
     // Validation des items
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -88,6 +106,30 @@ export async function POST(request: Request) {
         { error: 'Au moins un article doit être commandé' },
         { status: 400 }
       );
+    }
+
+    // Validation email si fourni
+    if (customerEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(customerEmail)) {
+        return NextResponse.json(
+          { error: 'Format d\'email invalide' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validation téléphone si fourni
+    if (customerPhone) {
+      // Format côte d'ivoire : +225 XX XX XX XX XX ou 07/05/01 XX XX XX XX
+      const phoneRegex = /^(\+225\s?)?[0-9\s]{10,}$/;
+      const cleanPhone = customerPhone.replace(/\s/g, '');
+      if (!phoneRegex.test(cleanPhone)) {
+        return NextResponse.json(
+          { error: 'Format de téléphone invalide' },
+          { status: 400 }
+        );
+      }
     }
 
     let customer = null;
@@ -100,9 +142,11 @@ export async function POST(request: Request) {
       // Pour les utilisateurs connectés, on peut créer un customer optionnel
       // basé sur les infos du user si customerName est fourni
       if (customerName && customerPhone) {
-        // Commande utilisateur avec infos de livraison spécifiques
+        // Normaliser le téléphone
+        const normalizedPhone = customerPhone.replace(/\s/g, '').replace(/^\+225/, '');
+        
         const existingCustomer = await prisma.customer.findFirst({
-          where: { phone: customerPhone }
+          where: { phone: normalizedPhone }
         });
 
         if (existingCustomer) {
@@ -118,7 +162,7 @@ export async function POST(request: Request) {
             data: {
               name: customerName,
               email: customerEmail || session.user.email,
-              phone: customerPhone
+              phone: normalizedPhone
             }
           });
         }
@@ -134,9 +178,12 @@ export async function POST(request: Request) {
         );
       }
 
+      // Normaliser le téléphone
+      const normalizedPhone = customerPhone.replace(/\s/g, '').replace(/^\+225/, '');
+
       // Créer ou trouver le client
       const existingCustomer = await prisma.customer.findFirst({
-        where: { phone: customerPhone }
+        where: { phone: normalizedPhone }
       });
 
       if (existingCustomer) {
@@ -152,7 +199,7 @@ export async function POST(request: Request) {
           data: {
             name: customerName,
             email: customerEmail,
-            phone: customerPhone
+            phone: normalizedPhone
           }
         });
       }
@@ -160,9 +207,17 @@ export async function POST(request: Request) {
 
     // Calculer le prix total et valider les produits
     let totalPrice = 0;
-    const validatedItems = [];
+    const validatedItems: Array<{productId: number; quantity: number; price: number}> = [];
+    const unavailableProducts = [];
 
     for (const item of items) {
+      if (!item.quantity || item.quantity < 1) {
+        return NextResponse.json(
+          { error: 'La quantité doit être au moins 1' },
+          { status: 400 }
+        );
+      }
+
       if (item.productId) {
         // Produit existant - vérifier s'il existe
         const product = await prisma.product.findUnique({
@@ -177,10 +232,8 @@ export async function POST(request: Request) {
         }
 
         if (!product.available) {
-          return NextResponse.json(
-            { error: `Le produit "${product.name}" n'est plus disponible` },
-            { status: 400 }
-          );
+          unavailableProducts.push(product.name);
+          continue;
         }
 
         const itemTotal = product.price * item.quantity;
@@ -193,6 +246,13 @@ export async function POST(request: Request) {
         });
       } else if (item.productName && item.price) {
         // Produit personnalisé des landing pages (rétrocompatibilité)
+        if (item.price < 0) {
+          return NextResponse.json(
+            { error: 'Le prix ne peut pas être négatif' },
+            { status: 400 }
+          );
+        }
+
         const itemTotal = item.price * item.quantity;
         totalPrice += itemTotal;
 
@@ -201,7 +261,7 @@ export async function POST(request: Request) {
           data: {
             name: item.productName,
             description: item.description || `Produit commandé via ${source}`,
-            image: item.image || 'https://via.placeholder.com/400x400?text=Produit',
+            image: item.image || '/images/default-product.jpg',
             price: item.price,
             category: item.category || 'Landing Page',
             available: false, // Produit temporaire, pas visible dans le catalogue
@@ -221,74 +281,181 @@ export async function POST(request: Request) {
       }
     }
 
-    // Préparer les notes
+    // Vérifier qu'il y a au moins un produit valide
+    if (validatedItems.length === 0) {
+      return NextResponse.json(
+        { 
+          error: 'Aucun produit disponible dans votre commande',
+          unavailableProducts 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Avertir si certains produits n'étaient pas disponibles
+    if (unavailableProducts.length > 0) {
+      console.warn(`Produits non disponibles retirés de la commande: ${unavailableProducts.join(', ')}`);
+    }
+
+    // Préparer les notes avec plus de contexte
     let orderNotes = notes || '';
+    const notesArray = [];
+    
     if (session?.user) {
-      orderNotes = `Commande utilisateur connecté (${session.user.email}). ${orderNotes}`;
+      notesArray.push(`Client connecté: ${session.user.email}`);
     } else {
-      orderNotes = `Commande invité via ${source}. ${orderNotes}`;
+      notesArray.push(`Commande invité`);
     }
     
+    notesArray.push(`Source: ${source}`);
+    
     if (customerAddress) {
-      orderNotes += ` Adresse: ${customerAddress}`;
+      notesArray.push(`Adresse: ${customerAddress}`);
     }
-
-    // Créer la commande
-    const orderData: any = {
-      status: 'PENDING',
-      totalPrice,
-      notes: orderNotes,
-      orderItems: {
-        create: validatedItems
-      }
-    };
-
-    // Ajouter userId OU customerId selon le cas
-    if (userId) {
-      orderData.userId = userId;
-      // Pour les utilisateurs connectés, on peut créer un customer optionnel
-      if (customer) {
-        orderData.customerId = customer.id;
-      }
-    } else if (customer) {
-      // Pour les invités, customerId est obligatoire
-      orderData.customerId = customer.id;
-    } else {
-      throw new Error('Aucun utilisateur ou client identifié');
+    
+    if (notificationPreference !== 'email') {
+      notesArray.push(`Préférence notification: ${notificationPreference}`);
     }
+    
+    if (orderNotes) {
+      notesArray.push(`Notes client: ${orderNotes}`);
+    }
+    
+    orderNotes = notesArray.join(' | ');
 
-    const order = await prisma.order.create({
-      data: orderData,
-      include: {
-        customer: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
+    // Créer la commande dans une transaction
+    const order = await prisma.$transaction(async (tx) => {
+      const orderData: any = {
+        status: 'PENDING',
+        totalPrice,
+        notes: orderNotes,
         orderItems: {
-          include: {
-            product: true
+          create: validatedItems
+        }
+      };
+
+      // Ajouter userId OU customerId selon le cas
+      if (userId) {
+        orderData.userId = userId;
+        if (customer) {
+          orderData.customerId = customer.id;
+        }
+      } else if (customer) {
+        orderData.customerId = customer.id;
+      } else {
+        throw new Error('Aucun utilisateur ou client identifié');
+      }
+
+      return await tx.order.create({
+        data: orderData,
+        include: {
+          customer: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          orderItems: {
+            include: {
+              product: true
+            }
           }
         }
-      }
+      });
     });
 
-    // Log pour debug
-    console.log(`Nouvelle commande créée:`, {
+    // Log structuré pour monitoring
+    console.log('📦 Nouvelle commande créée:', {
       orderId: order.id,
       userId: userId || 'invité',
       customerId: customer?.id || null,
       total: totalPrice,
-      itemsCount: validatedItems.length
+      itemsCount: validatedItems.length,
+      source,
+      notificationPreference,
+      hasEmail: !!(customer?.email || session?.user?.email),
+      hasPhone: !!customer?.phone
     });
 
-    return NextResponse.json(order, { status: 201 });
+    // Envoyer les notifications selon les préférences
+    if (order) {
+      const fullOrder = order as OrderWithFullRelations;
+      const emailData = MosesCafeEmailService.prepareEmailData(fullOrder);
+      
+      // Déterminer quelles notifications envoyer
+      const shouldSendEmail = notificationPreference === 'email' || notificationPreference === 'both';
+      const shouldSendSMS = notificationPreference === 'sms' || notificationPreference === 'both';
+      
+      // Notifications asynchrones
+      const notificationPromises = [];
+      
+      // Email client
+      if (shouldSendEmail && (customer?.email || session?.user?.email)) {
+        notificationPromises.push(
+          MosesCafeEmailService.sendCustomerConfirmation(emailData)
+            .then(result => ({ type: 'customer_email', ...result }))
+        );
+      }
+      
+      // Email admin (toujours envoyé)
+      notificationPromises.push(
+        MosesCafeEmailService.sendAdminNotification(emailData)
+          .then(result => ({ type: 'admin_email', ...result }))
+      );
+      
+      // SMS (si implémenté)
+      if (shouldSendSMS && customer?.phone) {
+        // TODO: Implémenter l'envoi SMS
+        console.log(`📱 SMS à implémenter pour: ${customer.phone}`);
+      }
+      
+      // Exécuter toutes les notifications
+      Promise.allSettled(notificationPromises)
+        .then((results) => {
+          const summary = results.map(result => {
+            if (result.status === 'fulfilled') {
+              const { type, success, reason } = result.value;
+              return `${type}: ${success ? '✅' : `❌ ${reason || 'erreur'}`}`;
+            } else {
+              return `❌ Erreur: ${result.reason}`;
+            }
+          });
+          
+          console.log(`📧 Notifications commande #${order.id}:`, summary.join(', '));
+        });
+    }
+
+    // Préparer la réponse avec informations utiles
+    const response = {
+      ...order,
+      // Ajouter des métadonnées utiles
+      _metadata: {
+        notificationsSent: {
+          email: notificationPreference === 'email' || notificationPreference === 'both',
+          sms: notificationPreference === 'sms' || notificationPreference === 'both'
+        },
+        unavailableProducts: unavailableProducts.length > 0 ? unavailableProducts : undefined,
+        estimatedTime: '10-15 minutes'
+      }
+    };
+
+    return NextResponse.json(response, { status: 201 });
     
   } catch (error) {
-    console.error('Erreur lors de la création de la commande:', error);
+    console.error('❌ Erreur lors de la création de la commande:', error);
+    
+    // Gestion d'erreurs plus spécifique
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint')) {
+        return NextResponse.json(
+          { error: 'Une commande similaire existe déjà' },
+          { status: 409 }
+        );
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Erreur serveur lors de la création de la commande' },
       { status: 500 }

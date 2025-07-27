@@ -550,7 +550,7 @@ export default function AuthOrderModal({
 
   return (
     <Dialog open={showCart} onOpenChange={setShowCart}>
-      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="!bg-white max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-lg sm:text-xl font-bold text-gray-800 flex items-center justify-between pr-6">
             <span>Mon Panier ({getTotalItems()} article{getTotalItems() > 1 ? 's' : ''})</span>

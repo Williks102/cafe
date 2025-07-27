@@ -301,7 +301,7 @@ export default function OrderTrackingPage() {
               </p>
               <div className="flex justify-center gap-4">
                 <a
-                  href="tel:+225XXXXXXXX"
+                  href="tel:+2250700707016"
                   className="flex items-center gap-2 bg-amber-600 text-white px-6 py-3 rounded-lg hover:bg-amber-700 transition-colors"
                 >
                   <Phone className="w-5 h-5" />
