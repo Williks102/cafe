@@ -1,4 +1,4 @@
-// app/api/register/route.ts
+// src/app/api/register/route.ts
 import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
         if (result.success) {
           console.log(`✅ Email de bienvenue envoyé à ${email}`);
         } else {
-          console.error(`❌ Échec envoi email de bienvenue à ${email}:`, result.error);
+          console.error(`❌ Échec envoi email de bienvenue à ${email}:`, result.reason);
         }
       })
       .catch((error) => {
