@@ -1,0 +1,40 @@
+{
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "mysql -h switchyard.proxy.rlwy.net -u root -p iyCsLseVusVYDZzxIXsAhjHNByGbWYiL --port 22178 --protocol=TCP railway",
+            "port": 3306,
+            "driver": "MySQL",
+            "name": "Railway",
+            "username": "root",
+            "database": "railway",
+            "password": ""
+        },
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "driver": "MySQL",
+            "name": "railway",
+            "connectString": "mysql://root:iyCsLseVusVYDZzxIXsAhjHNByGbWYiL@switchyard.proxy.rlwy.net:22178/railway"
+        },
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "driver": "MySQL",
+            "name": "od",
+            "connectString": "mysql://root:CHjYRAZRpqmCJjoVKYIojDwCIuyepDDs@maglev.proxy.rlwy.net:53273/railway"
+        }
+    ]
+}
