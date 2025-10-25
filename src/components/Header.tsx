@@ -24,7 +24,7 @@ export default function Header({ cartItemsCount = 0, onCartClick, showCart = tru
   const navigation = [
     { name: "Accueil", href: "/" },
     { name: "Capsules Robusta", href: "/produits/capsules-robusta" },
-    { name: "Expresso Moulu", href: "/produits/expresso-moulu-robusta" },
+    { name: "Expresso Moulu", href: "/produits/espresso-moulu-robusta" },
     { name: "Grains Robusta", href: "/produits/grains-robusta" },
   ];
 
