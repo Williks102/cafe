@@ -371,7 +371,7 @@ export default function RobustaLandingPage() {
             {/* Image produit */}
             <div className="text-center">
               <Image
-                src="https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400"
+                src="https://res.cloudinary.com/db4hmbdv3/image/upload/v1753454839/moses-cafe/products/moses-cafe-1753454839030-qzb00tcajyo.webp"
                 alt="Espresso Moulu Robusta"
                 width={200}
                 height={150}
