@@ -152,7 +152,7 @@ export default function RobustaLandingPage() {
               <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-red-400/20 rounded-2xl sm:rounded-3xl rotate-3 sm:rotate-6"></div>
               <div className="relative bg-white/10 backdrop-blur-lg rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl">
                 <Image
-                  src="https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600"
+                  src="https://res.cloudinary.com/db4hmbdv3/image/upload/v1753454839/moses-cafe/products/moses-cafe-1753454839030-qzb00tcajyo.webp"
                   alt="Espresso Moulu Robusta MosesCafe"
                   width={500}
                   height={400}
