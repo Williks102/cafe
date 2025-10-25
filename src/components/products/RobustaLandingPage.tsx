@@ -28,9 +28,9 @@ export default function RobustaLandingPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
 
   const formats = {
-    "250g": { price: 4500, label: "250g - Format découverte" },
-    "500g": { price: 8000, label: "500g - Format familial" },
-    "1kg": { price: 15000, label: "1kg - Format économique" }
+    "200g": { price: 2502, label: "200g - Format découverte" },
+    "500g": { price: 3529, label: "500g - Format familial" },
+    "1kg": { price: 6182, label: "1kg - Format économique" }
   };
 
   const formatPrice = (price: number) => {
