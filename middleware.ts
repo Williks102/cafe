@@ -1,109 +1,77 @@
-// middleware.ts
-import { auth } from '@/auth'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-export default auth((req) => {
+const PUBLIC_PATHS = new Set([
+  '/',
+  '/menu',
+  '/about',
+  '/contact',
+  '/auth/signin',
+  '/auth/signup',
+])
+
+const USER_PROTECTED_PREFIXES = ['/dashboard', '/profile', '/orders']
+const PROTECTED_API_PREFIXES = ['/api/orders', '/api/products', '/api/users']
+
+export default async function middleware(req: NextRequest) {
   const { nextUrl } = req
-  const isLoggedIn = !!req.auth
-  const userRole = req.auth?.user?.role
+  const pathname = nextUrl.pathname
 
-  console.log('🔍 Middleware - Path:', nextUrl.pathname)
-  console.log('🔍 Middleware - Logged in:', isLoggedIn)
-  console.log('🔍 Middleware - Role:', userRole)
+  const token = await getToken({ req, secret: process.env.AUTH_SECRET })
+  const isLoggedIn = !!token
+  const userRole = token?.role as string | undefined
 
-  // Routes publiques (accessibles sans connexion)
-  const isPublicRoute = [
-    '/',
-    '/menu',
-    '/about', 
-    '/contact',
-    '/auth/signin',
-    '/auth/signup',
-  ].includes(nextUrl.pathname) || 
-  nextUrl.pathname.startsWith('/api/auth') ||
-  nextUrl.pathname.startsWith('/_next') ||
-  nextUrl.pathname.startsWith('/favicon')
+  const isPublicRoute =
+    PUBLIC_PATHS.has(pathname) ||
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/favicon')
 
-  // Routes protégées utilisateur (nécessitent connexion)
-  const isUserProtectedRoute = [
-    '/dashboard',
-    '/profile',
-    '/orders'
-  ].some(route => nextUrl.pathname.startsWith(route))
+  const isUserProtectedRoute = USER_PROTECTED_PREFIXES.some((route) =>
+    pathname.startsWith(route),
+  )
 
-  // Routes admin (nécessitent connexion + rôle ADMIN)
-  const isAdminRoute = nextUrl.pathname.startsWith('/admin')
+  const isAdminRoute = pathname.startsWith('/admin')
 
-  // APIs protégées
-  const isProtectedAPI = [
-    '/api/orders',
-    '/api/products',
-    '/api/users'
-  ].some(route => nextUrl.pathname.startsWith(route))
+  const isProtectedAPI = PROTECTED_API_PREFIXES.some((route) =>
+    pathname.startsWith(route),
+  )
 
-  // === VÉRIFICATIONS DE SÉCURITÉ ===
-
-  // 1. Route admin sans connexion → redirection connexion
   if (isAdminRoute && !isLoggedIn) {
-    console.log('❌ Admin route sans connexion - Redirection signin')
     const signInUrl = new URL('/auth/signin', nextUrl.origin)
-    signInUrl.searchParams.set('callbackUrl', nextUrl.pathname)
-    return Response.redirect(signInUrl)
+    signInUrl.searchParams.set('callbackUrl', pathname)
+    return NextResponse.redirect(signInUrl)
   }
 
-  // 2. Route admin avec connexion mais pas ADMIN → Accès refusé
   if (isAdminRoute && isLoggedIn && userRole !== 'ADMIN') {
-    console.log('❌ Tentative accès admin sans rôle ADMIN')
-    return Response.redirect(new URL('/dashboard', nextUrl.origin))
+    return NextResponse.redirect(new URL('/dashboard', nextUrl.origin))
   }
 
-  // 3. Route utilisateur sans connexion → redirection connexion
   if (isUserProtectedRoute && !isLoggedIn) {
-    console.log('❌ Route protégée sans connexion - Redirection signin')
     const signInUrl = new URL('/auth/signin', nextUrl.origin)
-    signInUrl.searchParams.set('callbackUrl', nextUrl.pathname)
-    return Response.redirect(signInUrl)
+    signInUrl.searchParams.set('callbackUrl', pathname)
+    return NextResponse.redirect(signInUrl)
   }
 
-  // 4. API protégée sans session appropriée
   if (isProtectedAPI && !isLoggedIn) {
-    console.log('❌ API protégée sans connexion')
-    return new Response(
-      JSON.stringify({ error: 'Authentification requise' }), 
-      { 
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
+    return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
   }
 
-  // 5. Déjà connecté qui va sur pages auth → redirection dashboard
-  if (isLoggedIn && ['/auth/signin', '/auth/signup'].includes(nextUrl.pathname)) {
-    console.log('✅ Utilisateur connecté - Redirection dashboard')
+  if (isLoggedIn && (pathname === '/auth/signin' || pathname === '/auth/signup')) {
     if (userRole === 'ADMIN') {
-      return Response.redirect(new URL('/admin', nextUrl.origin))
+      return NextResponse.redirect(new URL('/admin', nextUrl.origin))
     }
-    return Response.redirect(new URL('/dashboard', nextUrl.origin))
+    return NextResponse.redirect(new URL('/dashboard', nextUrl.origin))
   }
 
-  // 6. Route publique → autoriser
   if (isPublicRoute) {
-    console.log('✅ Route publique - Autoriser')
-    return null
+    return NextResponse.next()
   }
 
-  console.log('✅ Middleware - Autoriser par défaut')
-  return null
-})
+  return NextResponse.next()
+}
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|public/).*)'],
 }
