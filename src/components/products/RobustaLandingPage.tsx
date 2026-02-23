@@ -28,9 +28,9 @@ export default function RobustaLandingPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
 
   const formats = {
-    "250g": { price: 4500, label: "250g - Format découverte" },
-    "500g": { price: 8000, label: "500g - Format familial" },
-    "1kg": { price: 15000, label: "1kg - Format économique" }
+    "200g": { price: 2502, label: "200g - Format découverte" },
+    "500g": { price: 3529, label: "500g - Format familial" },
+    "1kg": { price: 6182, label: "1kg - Format économique" }
   };
 
   const formatPrice = (price: number) => {
@@ -152,7 +152,7 @@ export default function RobustaLandingPage() {
               <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-red-400/20 rounded-2xl sm:rounded-3xl rotate-3 sm:rotate-6"></div>
               <div className="relative bg-white/10 backdrop-blur-lg rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl">
                 <Image
-                  src="https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600"
+                  src="https://res.cloudinary.com/db4hmbdv3/image/upload/v1753454839/moses-cafe/products/moses-cafe-1753454839030-qzb00tcajyo.webp"
                   alt="Espresso Moulu Robusta MosesCafe"
                   width={500}
                   height={400}
@@ -371,7 +371,7 @@ export default function RobustaLandingPage() {
             {/* Image produit */}
             <div className="text-center">
               <Image
-                src="https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400"
+                src="https://res.cloudinary.com/db4hmbdv3/image/upload/v1753454839/moses-cafe/products/moses-cafe-1753454839030-qzb00tcajyo.webp"
                 alt="Espresso Moulu Robusta"
                 width={200}
                 height={150}
