@@ -38,6 +38,9 @@ export default async function middleware(req: NextRequest) {
     pathname.startsWith(route),
   )
 
+  const isProductsAPI = pathname.startsWith('/api/products')
+  const isReadProductsRequest = isProductsAPI && req.method === 'GET'
+
   if (isAdminRoute && !isLoggedIn) {
     const signInUrl = new URL('/auth/signin', nextUrl.origin)
     signInUrl.searchParams.set('callbackUrl', pathname)
@@ -52,6 +55,10 @@ export default async function middleware(req: NextRequest) {
     const signInUrl = new URL('/auth/signin', nextUrl.origin)
     signInUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(signInUrl)
+  }
+
+  if (isReadProductsRequest) {
+    return NextResponse.next()
   }
 
   if (isProtectedAPI && !isLoggedIn) {
