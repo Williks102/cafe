@@ -11,6 +11,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Authentification requise' }, { status: 401 });
+    }
+
     const { id } = await params;
     const orderId = parseInt(id);
     
@@ -41,6 +46,14 @@ export async function GET(
     });
 
     if (!order) {
+      return NextResponse.json(
+        { error: 'Commande non trouvée' },
+        { status: 404 }
+      );
+    }
+
+    // Réponse identique à "introuvable" si ce n'est pas la commande de l'appelant (anti-énumération)
+    if (session.user.role !== 'ADMIN' && order.userId !== session.user.id) {
       return NextResponse.json(
         { error: 'Commande non trouvée' },
         { status: 404 }

@@ -1,15 +1,22 @@
 // src/app/api/register/route.ts
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { MosesCafeEmailService } from "@/lib/email-service";
 
-const prisma = new PrismaClient();
-
 export async function POST(request: Request) {
   try {
+    if (!rateLimit(`register:${clientIp(request)}`, 5, 60 * 60 * 1000)) {
+      return NextResponse.json(
+        { message: "Trop de tentatives. Réessayez plus tard." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
-    const { name, email, password } = body;
+    const { name, password } = body;
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
 
     // Vérifie si tous les champs sont présents
     if (!name || !email || !password) {
@@ -93,7 +100,5 @@ export async function POST(request: Request) {
       { message: "Erreur serveur. Veuillez réessayer." },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

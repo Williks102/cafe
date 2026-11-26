@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { requireAdmin } from '@/lib/auth-guards';
 
 // Types Prisma pour éviter les conflits
 type OrderWithRelations = Prisma.OrderGetPayload<{
@@ -57,6 +58,9 @@ interface AdminStats {
 
 export async function GET() {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return guard.error;
+
     // Récupérer toutes les commandes avec les relations
     const orders: OrderWithRelations[] = await prisma.order.findMany({
       include: {
