@@ -10,6 +10,7 @@ import Header from '@/components/Header';
 
 interface Order {
   id: number;
+  orderNumber: string;
   status: string;
   totalPrice: number;
   notes?: string;
@@ -91,7 +92,7 @@ export default function OrderTrackingPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ phone: phone.trim(), orderId: orderId.trim() }),
+        body: JSON.stringify({ phone: phone.trim(), order: orderId.trim() }),
       });
 
       const data = await response.json();
@@ -134,8 +135,7 @@ export default function OrderTrackingPage() {
                 </Label>
                 <Input
                   id="orderId"
-                  inputMode="numeric"
-                  placeholder="Ex : 42 (affiché à la confirmation)"
+                                    placeholder="Ex : MC-K7F3Q9 (affiché à la confirmation)"
                   value={orderId}
                   onChange={(e) => setOrderId(e.target.value)}
                   className="mt-2 bg-white text-lg py-3"
@@ -209,7 +209,7 @@ export default function OrderTrackingPage() {
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="text-2xl font-bold mb-2">
-                              Commande #{order.id}
+                              Commande {order.orderNumber}
                             </h3>
                             <p className="text-amber-100">
                               Passée le {new Date(order.createdAt).toLocaleDateString('fr-FR', {

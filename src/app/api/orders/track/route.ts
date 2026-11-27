@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { rateLimit, clientIp } from '@/lib/rate-limit';
 import { trackSchema, firstIssue } from '@/lib/schemas';
 
-// Suivi invité : il faut le NUMÉRO DE COMMANDE ET le téléphone utilisé à la commande.
+// Suivi invité : il faut le NUMÉRO DE COMMANDE (MC-XXXXXX, ou ancien numéro) ET le téléphone utilisé à la commande.
 // Un seul des deux ne suffit pas. Réponse identique que la commande n'existe pas
 // ou que le téléphone ne correspond pas (pas d'oracle d'énumération).
 export async function POST(request: Request) {
@@ -21,12 +21,16 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: firstIssue(parsed.error) }, { status: 400 });
     }
-    const { orderId, phone } = parsed.data;
+    const { order: ref, phone } = parsed.data;
 
     const order = await prisma.order.findFirst({
-      where: { id: orderId, customer: { phone } },
+      where: {
+        ...('orderNumber' in ref ? { orderNumber: ref.orderNumber } : { id: ref.legacyId }),
+        customer: { phone },
+      },
       select: {
         id: true,
+        orderNumber: true,
         status: true,
         totalPrice: true,
         createdAt: true,

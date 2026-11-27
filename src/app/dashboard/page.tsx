@@ -28,6 +28,7 @@ interface OrderItem {
 
 interface Order {
   id: number;
+  orderNumber: string;
   customerId: number | null;
   userId: string | null;
   status: string;
@@ -265,7 +266,7 @@ export default function DashboardPage() {
                         <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gray-900 text-sm sm:text-base">Commande #{order.id}</p>
+                        <p className="font-medium text-gray-900 text-sm sm:text-base">Commande {order.orderNumber}</p>
                         <p className="text-xs sm:text-sm text-gray-500 flex items-center">
                           <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 shrink-0" />
                           <span className="truncate">

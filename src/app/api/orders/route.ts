@@ -6,6 +6,7 @@ import { OrderWithFullRelations } from '@/types/email-types';
 import { normalizePhone } from '@/lib/phone';
 import { LANDING_CATALOG } from '@/lib/landing-catalog';
 import { rateLimit, clientIp } from '@/lib/rate-limit';
+import { generateOrderNumber } from '@/lib/order-number';
 import { orderCreateSchema, firstIssue } from '@/lib/schemas';
 
 interface ValidatedOrderItem {
@@ -342,7 +343,14 @@ export async function POST(request: Request) {
 
     // Créer la commande dans une transaction
     const order = await prisma.$transaction(async (tx) => {
+      // Numéro public aléatoire ; la contrainte UNIQUE reste le garde-fou ultime
+      let orderNumber = generateOrderNumber();
+      for (let i = 0; i < 5 && (await tx.order.findUnique({ where: { orderNumber } })); i++) {
+        orderNumber = generateOrderNumber();
+      }
+
       const orderData: any = {
+        orderNumber,
         status: 'PENDING',
         totalPrice,
         notes: orderNotes,
@@ -386,6 +394,7 @@ export async function POST(request: Request) {
     // Log structuré pour monitoring
     console.log('📦 Nouvelle commande créée:', {
       orderId: order.id,
+      orderNumber: order.orderNumber,
       userId: userId || 'invité',
       customerId: customer?.id || null,
       total: totalPrice,
@@ -440,7 +449,7 @@ export async function POST(request: Request) {
             }
           });
           
-          console.log(`📧 Notifications commande #${order.id}:`, summary.join(', '));
+          console.log(`📧 Notifications commande ${order.orderNumber}:`, summary.join(', '));
         });
     }
 

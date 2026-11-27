@@ -25,6 +25,7 @@ import {
 
 interface Order {
   id: number;
+  orderNumber: string;
   customerId: number;
   status: string;
   totalPrice: number;
@@ -186,7 +187,8 @@ export default function AdminDashboard() {
     const matchesSearch = searchTerm === '' || 
       order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer.phone.includes(searchTerm) ||
-      order.id.toString().includes(searchTerm);
+      order.id.toString().includes(searchTerm) ||
+      order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesStatus && matchesSearch;
   });
@@ -343,7 +345,7 @@ export default function AdminDashboard() {
                   {filteredOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900">#{order.id}</div>
+                        <div className="font-medium text-gray-900">{order.orderNumber}</div>
                       </td>
                       
                       <td className="px-6 py-4">
@@ -432,7 +434,7 @@ export default function AdminDashboard() {
         <DialogContent className="max-w-2xl bg-white max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
-              Détails de la commande #{selectedOrder?.id}
+              Détails de la commande {selectedOrder?.orderNumber}
             </DialogTitle>
           </DialogHeader>
 

@@ -5,6 +5,7 @@ import { useNotifications } from '@/contexts/NotificationContext';
 
 interface Order {
   id: number;
+  orderNumber: string;
   status: string;
   totalPrice: number;
   createdAt: string;
@@ -75,31 +76,31 @@ export function useOrderNotifications() {
 function createOrderStatusNotification(order: Order) {
   const statusConfig = {
     CONFIRMED: {
-      title: `Commande #${order.id} confirmée`,
+      title: `Commande ${order.orderNumber} confirmée`,
       message: 'Votre commande a été confirmée et sera bientôt préparée.',
       icon: '✅',
       priority: 'medium' as const
     },
     PREPARING: {
-      title: `Commande #${order.id} en préparation`,
+      title: `Commande ${order.orderNumber} en préparation`,
       message: 'Nos baristas préparent votre commande avec soin.',
       icon: '👨‍🍳',
       priority: 'medium' as const
     },
     READY: {
-      title: `Commande #${order.id} prête !`,
+      title: `Commande ${order.orderNumber} prête !`,
       message: 'Votre commande est prête pour le retrait ou la livraison.',
       icon: '📦',
       priority: 'high' as const
     },
     DELIVERED: {
-      title: `Commande #${order.id} livrée`,
+      title: `Commande ${order.orderNumber} livrée`,
       message: 'Votre commande a été livrée. Bon appétit !',
       icon: '🚚',
       priority: 'medium' as const
     },
     CANCELLED: {
-      title: `Commande #${order.id} annulée`,
+      title: `Commande ${order.orderNumber} annulée`,
       message: 'Votre commande a été annulée. Contactez-nous si nécessaire.',
       icon: '❌',
       priority: 'high' as const
@@ -107,7 +108,7 @@ function createOrderStatusNotification(order: Order) {
   };
 
   const config = statusConfig[order.status as keyof typeof statusConfig] || {
-    title: `Commande #${order.id}`,
+    title: `Commande ${order.orderNumber}`,
     message: 'Statut de votre commande mis à jour.',
     icon: '📋',
     priority: 'medium' as const

@@ -47,18 +47,26 @@ describe('POST /api/orders/track', () => {
   it('cherche par id ET téléphone exact, sans fuite email/notes', async () => {
     mocks.prisma.order.findFirst.mockResolvedValue({ id: 7, status: 'PENDING' })
     const { POST } = await import('@/app/api/orders/track/route')
-    const res = await POST(json('/api/orders/track', { orderId: 7, phone: '+225 07 12 34 56 78' }, 'POST', '2.0.0.2'))
+    const res = await POST(json('/api/orders/track', { order: 'mc-k7f3q9', phone: '+225 07 12 34 56 78' }, 'POST', '2.0.0.2'))
     expect(res.status).toBe(200)
     const arg = mocks.prisma.order.findFirst.mock.calls[0][0]
-    expect(arg.where).toEqual({ id: 7, customer: { phone: '0712345678' } })
+    expect(arg.where).toEqual({ orderNumber: 'MC-K7F3Q9', customer: { phone: '0712345678' } })
     expect(arg.select.customer.select).toEqual({ name: true, phone: true })
     expect(arg.select.notes).toBeUndefined()
+  })
+
+  it('accepte encore un ancien numéro (id) avec le téléphone', async () => {
+    mocks.prisma.order.findFirst.mockResolvedValue({ id: 7 })
+    const { POST } = await import('@/app/api/orders/track/route')
+    const res = await POST(json('/api/orders/track', { order: '#7', phone: '0712345678' }, 'POST', '2.0.0.5'))
+    expect(res.status).toBe(200)
+    expect(mocks.prisma.order.findFirst.mock.calls[0][0].where).toEqual({ id: 7, customer: { phone: '0712345678' } })
   })
 
   it('renvoie une liste vide si téléphone ne correspond pas', async () => {
     mocks.prisma.order.findFirst.mockResolvedValue(null)
     const { POST } = await import('@/app/api/orders/track/route')
-    const res = await POST(json('/api/orders/track', { orderId: 7, phone: '0700000000' }, 'POST', '2.0.0.3'))
+    const res = await POST(json('/api/orders/track', { order: 'MC-K7F3Q9', phone: '0700000000' }, 'POST', '2.0.0.3'))
     expect(await res.json()).toEqual({ orders: [], count: 0 })
   })
 
@@ -67,7 +75,7 @@ describe('POST /api/orders/track', () => {
     const { POST } = await import('@/app/api/orders/track/route')
     let last = 0
     for (let i = 0; i < 11; i++) {
-      last = (await POST(json('/api/orders/track', { orderId: i + 1, phone: '0700000000' }, 'POST', '2.0.0.4'))).status
+      last = (await POST(json('/api/orders/track', { order: 'MC-K7F3Q9', phone: '0700000000' }, 'POST', '2.0.0.4'))).status
     }
     expect(last).toBe(429)
   })
@@ -150,7 +158,7 @@ describe('POST /api/orders — prix', () => {
     mocks.prisma.product.findFirst.mockResolvedValue({ id: 50 })
     let created: any
     mocks.prisma.$transaction.mockImplementation(async (fn: any) =>
-      fn({ order: { create: async (a: any) => ((created = a.data), { id: 1, ...a.data, orderItems: [] }) } })
+      fn({ order: { findUnique: async () => null, create: async (a: any) => ((created = a.data), { id: 1, ...a.data, orderItems: [] }) } })
     )
     const { POST } = await import('@/app/api/orders/route')
     const res = await POST(
@@ -162,6 +170,7 @@ describe('POST /api/orders — prix', () => {
     )
     expect(res.status).toBe(201)
     expect(created.totalPrice).toBe(36000)
+    expect(created.orderNumber).toMatch(/^MC-[A-Z2-9]{6}$/)
     expect(created.orderItems.create[0].price).toBe(18000)
   })
 

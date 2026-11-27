@@ -83,7 +83,7 @@ export const generateCustomerOrderTemplate = (data: EmailOrderData): string => {
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
                 <td style="color: #92400e; font-size: 14px;">
-                    <strong>Commande #${data.orderId}</strong>
+                    <strong>Commande ${data.orderNumber}</strong>
                 </td>
                 <td align="right" style="color: #92400e; font-size: 14px;">
                     ${orderDate}
@@ -163,7 +163,7 @@ export const generateAdminOrderTemplate = (data: EmailOrderData): string => {
   const content = `
     <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
         <h2 style="margin: 0; color: #991b1b; font-size: 24px; font-weight: bold;">
-            🚨 NOUVELLE COMMANDE #${data.orderId}
+            🚨 NOUVELLE COMMANDE ${data.orderNumber}
         </h2>
     </div>
 
@@ -285,7 +285,7 @@ export const generateStatusUpdateTemplate = (data: EmailOrderData, statusMessage
             ${statusMessage}
         </h2>
         <p style="margin: 0; color: #6b7280; font-size: 16px;">
-            Commande #${data.orderId}
+            Commande ${data.orderNumber}
         </p>
     </div>
 

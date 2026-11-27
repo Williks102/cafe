@@ -80,7 +80,7 @@ export default function RobustaLandingPage() {
 
       const order = await response.json();
 
-      alert(`✅ Commande confirmée avec succès !\n\nNuméro de commande : #${order.id}\n${quantity}x Espresso Robusta ${selectedFormat}\nTotal: ${formatPrice(total)}\n\nNous vous contacterons au ${form.phone} pour confirmer votre commande.\n\n🔍 Suivez votre commande sur mosescafe.ci/suivi`);
+      alert(`✅ Commande confirmée avec succès !\n\nNuméro de commande : ${order.orderNumber}\n(à conserver avec votre téléphone pour le suivi)\n${quantity}x Espresso Robusta ${selectedFormat}\nTotal: ${formatPrice(total)}\n\nNous vous contacterons au ${form.phone} pour confirmer votre commande.\n\n🔍 Suivez votre commande sur mosescafe.ci/suivi`);
       
       setShowModal(false);
       setForm({ name: "", email: "", phone: "" });

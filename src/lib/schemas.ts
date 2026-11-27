@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { normalizePhone } from './phone'
+import { parseOrderRef } from './order-number'
 
 // "" -> undefined pour les champs optionnels envoyés vides par les formulaires
 const emptyToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v)
@@ -47,17 +48,30 @@ export const orderCreateSchema = z.object({
   notificationPreference: z.enum(['email', 'sms', 'both', 'none']).default('email'),
 })
 
-// Suivi invité : numéro de commande ET téléphone (10 chiffres, après normalisation)
-export const trackSchema = z.object({
-  orderId: z
-    .union([z.number(), z.string()], { error: 'Numéro de commande requis' })
-    .transform((v) => Number(String(v).replace(/[^0-9]/g, '')))
-    .pipe(z.number({ error: 'Numéro de commande invalide' }).int().positive().max(2_147_483_647)),
-  phone: z
-    .string()
-    .transform(normalizePhone)
-    .pipe(z.string().regex(/^[0-9]{10}$/, 'Numéro de téléphone invalide (10 chiffres)')),
-})
+// Suivi invité : numéro de commande ET téléphone (10 chiffres, après normalisation).
+// "order" accepte le numéro public (MC-XXXXXX) ou un ancien numéro numérique ;
+// l'ancien nom de champ "orderId" reste lu pour les clients déjà chargés.
+export const trackSchema = z.preprocess(
+  (v) => {
+    if (v && typeof v === 'object' && 'orderId' in v && !('order' in v)) {
+      return { ...(v as object), order: (v as { orderId: unknown }).orderId }
+    }
+    return v
+  },
+  z.object({
+    order: z
+      .union([z.number(), z.string()], { error: 'Numéro de commande requis' })
+      .transform((v, ctx) => {
+        const ref = parseOrderRef(v)
+        if (!ref) ctx.addIssue({ code: 'custom', message: 'Numéro de commande invalide' })
+        return ref as NonNullable<ReturnType<typeof parseOrderRef>>
+      }),
+    phone: z
+      .string()
+      .transform(normalizePhone)
+      .pipe(z.string().regex(/^[0-9]{10}$/, 'Numéro de téléphone invalide (10 chiffres)')),
+  })
+)
 
 export function firstIssue(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Données invalides'

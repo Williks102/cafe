@@ -34,6 +34,7 @@ export interface OrderItem {
 // Interface pour les commandes
 export interface Order {
   id: number;
+  orderNumber: string;
   customerId: number;
   status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED';
   totalPrice: number;

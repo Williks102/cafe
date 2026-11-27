@@ -108,6 +108,8 @@ model Customer {
 
 model Order {
   id         Int         @id @default(autoincrement())
+  // Numéro public (emails, suivi, affichage) : aléatoire, non séquentiel. Voir src/lib/order-number.ts
+  orderNumber String     @unique @map("order_number") @db.VarChar(20)
   customerId Int?        // Optionnel pour les commandes invités
   userId     String?     // Lien vers User authentifié (optionnel)
   status     OrderStatus @default(PENDING)

@@ -45,7 +45,7 @@ export class MosesCafeEmailService {
     }
 
     if (!data.customerEmail) {
-      console.log(`Commande #${data.orderId}: Pas d'email client, notification par téléphone uniquement`);
+      console.log(`Commande ${data.orderNumber}: Pas d'email client, notification par téléphone uniquement`);
       return { success: false, reason: 'no_email' };
     }
 
@@ -54,19 +54,19 @@ export class MosesCafeEmailService {
         from: EMAIL_CONFIG.from.customer,
         to: [data.customerEmail],
         replyTo: EMAIL_CONFIG.replyTo,
-        subject: `✅ Commande #${data.orderId} confirmée - MosesCafe`,
+        subject: `✅ Commande ${data.orderNumber} confirmée - MosesCafe`,
         html: generateCustomerOrderTemplate(data),
       });
 
       if (error) {
-        console.error(`Erreur envoi email client #${data.orderId}:`, error);
+        console.error(`Erreur envoi email client ${data.orderNumber}:`, error);
         return { success: false, reason: 'email_error' };
       }
 
-      console.log(`✅ Email confirmation envoyé au client #${data.orderId}:`, result?.id);
+      console.log(`✅ Email confirmation envoyé au client ${data.orderNumber}:`, result?.id);
       return { success: true, emailId: result?.id };
     } catch (error) {
-      console.error(`Exception envoi email client #${data.orderId}:`, error);
+      console.error(`Exception envoi email client ${data.orderNumber}:`, error);
       return { success: false, reason: 'exception' };
     }
   }
@@ -84,19 +84,19 @@ export class MosesCafeEmailService {
         from: EMAIL_CONFIG.from.system,
         to: EMAIL_CONFIG.admin.emails,
         replyTo: data.customerEmail || EMAIL_CONFIG.replyTo,
-        subject: `🚨 NOUVELLE COMMANDE #${data.orderId} - ${data.customerName} - ${new Intl.NumberFormat('fr-FR').format(data.totalPrice)} CFA`,
+        subject: `🚨 NOUVELLE COMMANDE ${data.orderNumber} - ${data.customerName} - ${new Intl.NumberFormat('fr-FR').format(data.totalPrice)} CFA`,
         html: generateAdminOrderTemplate(data),
       });
 
       if (error) {
-        console.error(`Erreur envoi email admin #${data.orderId}:`, error);
+        console.error(`Erreur envoi email admin ${data.orderNumber}:`, error);
         return { success: false, reason: 'email_error' };
       }
 
-      console.log(`🚨 Notification admin envoyée #${data.orderId}:`, result?.id);
+      console.log(`🚨 Notification admin envoyée ${data.orderNumber}:`, result?.id);
       return { success: true, emailId: result?.id };
     } catch (error) {
-      console.error(`Exception envoi email admin #${data.orderId}:`, error);
+      console.error(`Exception envoi email admin ${data.orderNumber}:`, error);
       return { success: false, reason: 'exception' };
     }
   }
@@ -128,7 +128,7 @@ export class MosesCafeEmailService {
 
     // Ne pas envoyer d'email pour PENDING (déjà fait à la création)
     if (data.status === 'PENDING') {
-      console.log(`Commande #${data.orderId}: Email PENDING ignoré (déjà envoyé à la création)`);
+      console.log(`Commande ${data.orderNumber}: Email PENDING ignoré (déjà envoyé à la création)`);
       return { success: false, reason: 'pending_ignored' };
     }
 
@@ -137,19 +137,19 @@ export class MosesCafeEmailService {
         from: EMAIL_CONFIG.from.customer,
         to: [data.customerEmail],
         replyTo: EMAIL_CONFIG.replyTo,
-        subject: `${message} - Commande #${data.orderId}`,
+        subject: `${message} - Commande ${data.orderNumber}`,
         html: generateStatusUpdateTemplate(data, message),
       });
 
       if (error) {
-        console.error(`Erreur envoi email statut #${data.orderId}:`, error);
+        console.error(`Erreur envoi email statut ${data.orderNumber}:`, error);
         return { success: false, reason: 'email_error' };
       }
 
-      console.log(`📧 Email statut ${data.status} envoyé #${data.orderId}:`, result?.id);
+      console.log(`📧 Email statut ${data.status} envoyé ${data.orderNumber}:`, result?.id);
       return { success: true, emailId: result?.id };
     } catch (error) {
-      console.error(`Exception envoi email statut #${data.orderId}:`, error);
+      console.error(`Exception envoi email statut ${data.orderNumber}:`, error);
       return { success: false, reason: 'exception' };
     }
   }
@@ -304,6 +304,7 @@ export class MosesCafeEmailService {
   static prepareEmailData(order: any): EmailOrderData {
     return {
       orderId: order.id,
+      orderNumber: order.orderNumber || `#${order.id}`,
       customerName: order.customer?.name || order.user?.name || 'Client',
       customerEmail: order.customer?.email || order.user?.email || null,
       customerPhone: order.customer?.phone || '',

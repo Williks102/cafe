@@ -22,6 +22,7 @@ interface OrderItem {
 
 interface Order {
   id: number;
+  orderNumber: string;
   status: string;
   totalPrice: number;
   notes?: string;
@@ -261,11 +262,11 @@ export default function OrdersPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="h-10 w-10 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">#{order.id}</span>
+                          <span className="text-white font-bold text-xs">{order.orderNumber?.slice(-3) ?? order.id}</span>
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900">
-                            Commande #{order.id}
+                            Commande {order.orderNumber}
                           </h3>
                           <p className="text-sm text-gray-500 flex items-center">
                             <Clock className="h-4 w-4 mr-1" />

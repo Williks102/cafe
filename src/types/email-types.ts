@@ -20,6 +20,7 @@ export type OrderWithFullRelations = Prisma.OrderGetPayload<{
 
 export interface EmailOrderData {
   orderId: number;
+  orderNumber: string;
   customerName: string;
   customerEmail?: string | null;
   customerPhone: string;

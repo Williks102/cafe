@@ -16,6 +16,19 @@ ADMIN_SEED_PASSWORD='un-mot-de-passe-de-12+-caracteres' npm run db:seed
 npm run dev
 ```
 
+## Base de données — numéro de commande
+
+Les commandes ont un numéro public aléatoire `MC-XXXXXX` (`orders.order_number`), en plus de l'`id` interne.
+Le suivi `/suivi` accepte ce numéro **ou** l'ancien numéro numérique (commandes déjà envoyées par email), toujours avec le téléphone.
+
+⚠️ À appliquer **avant** de déployer ce code (sinon les commandes échouent, la colonne n'existe pas) :
+
+```bash
+psql "$DATABASE_URL" -f prisma/sql/add-order-number.sql   # idempotent
+```
+
+Note : `prisma/migrations/` contient une migration MySQL, inutilisable avec ce PostgreSQL ; d'où ce script SQL à part.
+
 ## Scripts
 
 | Script | Rôle |
