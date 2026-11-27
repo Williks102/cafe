@@ -21,7 +21,15 @@ export default async function middleware(req: NextRequest) {
   const { nextUrl } = req
   const pathname = nextUrl.pathname
 
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET })
+  // En HTTPS, Auth.js nomme le cookie "__Secure-authjs.session-token" (et s'en sert comme "salt").
+  // Sans secureCookie, getToken cherche le cookie non sécurisé et ne voit jamais la session.
+  const secureCookie =
+    nextUrl.protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https'
+  const token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+    secureCookie,
+  })
   const isLoggedIn = !!token
   const userRole = token?.role as string | undefined
 
