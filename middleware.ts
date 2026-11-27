@@ -12,7 +12,10 @@ const PUBLIC_PATHS = new Set([
 ])
 
 const USER_PROTECTED_PREFIXES = ['/dashboard', '/profile', '/orders']
-const PROTECTED_API_PREFIXES = ['/api/orders', '/api/products', '/api/users']
+// Les routes publiques (catalogue, commande invité, suivi par téléphone) ne sont PAS ici.
+// Chaque route sensible vérifie aussi elle-même la session/le rôle (défense en profondeur).
+const PROTECTED_API_PREFIXES = ['/api/orders/me', '/api/users']
+const ADMIN_API_PREFIXES = ['/api/admin', '/api/upload']
 
 export default async function middleware(req: NextRequest) {
   const { nextUrl } = req
@@ -37,6 +40,17 @@ export default async function middleware(req: NextRequest) {
   const isProtectedAPI = PROTECTED_API_PREFIXES.some((route) =>
     pathname.startsWith(route),
   )
+
+  const isAdminAPI = ADMIN_API_PREFIXES.some((route) => pathname.startsWith(route))
+
+  if (isAdminAPI) {
+    if (!isLoggedIn) {
+      return NextResponse.json({ error: 'Authentification requise' }, { status: 401 })
+    }
+    if (userRole !== 'ADMIN') {
+      return NextResponse.json({ error: 'Accès réservé aux administrateurs' }, { status: 403 })
+    }
+  }
 
   if (isAdminRoute && !isLoggedIn) {
     const signInUrl = new URL('/auth/signin', nextUrl.origin)

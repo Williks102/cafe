@@ -25,9 +25,9 @@ export default {
           return null
         }
 
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
           where: {
-            email: credentials.email as string
+            email: { equals: (credentials.email as string).trim(), mode: 'insensitive' }
           }
         })
 

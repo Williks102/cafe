@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth-guards';
 
 // GET /api/products/[id] - Récupérer un produit par ID
 export async function GET(
@@ -46,6 +47,9 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return guard.error;
+
     const { id } = await context.params;
     const productId = parseInt(id);
     const body = await request.json();
@@ -73,8 +77,13 @@ export async function PUT(
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
-        ...body,
-        updatedAt: new Date()
+        // Liste blanche : pas de mass assignment (id, createdAt, etc.)
+        ...(typeof body.name === 'string' && { name: body.name }),
+        ...(typeof body.description === 'string' && { description: body.description }),
+        ...(typeof body.image === 'string' && { image: body.image }),
+        ...(Number.isInteger(body.price) && body.price > 0 && { price: body.price }),
+        ...(body.category !== undefined && { category: body.category || null }),
+        ...(typeof body.available === 'boolean' && { available: body.available }),
       }
     });
 
@@ -94,6 +103,9 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return guard.error;
+
     const { id } = await context.params;
     const productId = parseInt(id);
 

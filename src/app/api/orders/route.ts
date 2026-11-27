@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { MosesCafeEmailService } from '@/lib/email-service';
 import { OrderWithFullRelations } from '@/types/email-types';
+import { normalizePhone } from '@/lib/phone';
+import { LANDING_CATALOG } from '@/lib/landing-catalog';
+import { rateLimit, clientIp } from '@/lib/rate-limit';
 
 interface ValidatedOrderItem {
   productId: number;
@@ -81,6 +84,14 @@ export async function GET() {
 // POST /api/orders - Créer une nouvelle commande
 export async function POST(request: Request) {
   try {
+    // Anti-spam : 10 commandes / 10 min par IP
+    if (!rateLimit(`order:${clientIp(request)}`, 10, 10 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: 'Trop de commandes, réessayez dans quelques minutes' },
+        { status: 429 }
+      );
+    }
+
     const session = await auth();
     const body = await request.json();
     
@@ -101,7 +112,7 @@ export async function POST(request: Request) {
     } = body;
 
     // Validation des items
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    if (!items || !Array.isArray(items) || items.length === 0 || items.length > 50) {
       return NextResponse.json(
         { error: 'Au moins un article doit être commandé' },
         { status: 400 }
@@ -143,7 +154,7 @@ export async function POST(request: Request) {
       // basé sur les infos du user si customerName est fourni
       if (customerName && customerPhone) {
         // Normaliser le téléphone
-        const normalizedPhone = customerPhone.replace(/\s/g, '').replace(/^\+225/, '');
+        const normalizedPhone = normalizePhone(customerPhone);
         
         const existingCustomer = await prisma.customer.findFirst({
           where: { phone: normalizedPhone }
@@ -179,7 +190,7 @@ export async function POST(request: Request) {
       }
 
       // Normaliser le téléphone
-      const normalizedPhone = customerPhone.replace(/\s/g, '').replace(/^\+225/, '');
+      const normalizedPhone = normalizePhone(customerPhone);
 
       // Créer ou trouver le client
       const existingCustomer = await prisma.customer.findFirst({
@@ -211,14 +222,17 @@ export async function POST(request: Request) {
     const unavailableProducts = [];
 
     for (const item of items) {
-      if (!item.quantity || item.quantity < 1) {
+      if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) {
         return NextResponse.json(
-          { error: 'La quantité doit être au moins 1' },
+          { error: 'La quantité doit être un entier entre 1 et 100' },
           { status: 400 }
         );
       }
 
-      if (item.productId) {
+      if (item.productId !== undefined && item.productId !== null) {
+        if (!Number.isInteger(item.productId)) {
+          return NextResponse.json({ error: 'Identifiant produit invalide' }, { status: 400 });
+        }
         // Produit existant - vérifier s'il existe
         const product = await prisma.product.findUnique({
           where: { id: item.productId }
@@ -244,34 +258,32 @@ export async function POST(request: Request) {
           quantity: item.quantity,
           price: product.price
         });
-      } else if (item.productName && item.price) {
-        // Produit personnalisé des landing pages (rétrocompatibilité)
-        if (item.price < 0) {
-          return NextResponse.json(
-            { error: 'Le prix ne peut pas être négatif' },
-            { status: 400 }
-          );
+      } else if (typeof item.productName === 'string' && LANDING_CATALOG[item.productName]) {
+        // Produit des landing pages : le PRIX VIENT DU SERVEUR, jamais du client
+        const ref = LANDING_CATALOG[item.productName];
+
+        // Réutilise le produit "caché" existant plutôt que d'en créer un par commande
+        let landingProduct = await prisma.product.findFirst({
+          where: { name: item.productName, available: false, category: ref.category }
+        });
+        if (!landingProduct) {
+          landingProduct = await prisma.product.create({
+            data: {
+              name: item.productName,
+              description: typeof item.description === 'string' ? item.description.slice(0, 500) : `Produit commandé via ${source}`,
+              image: typeof item.image === 'string' && item.image.startsWith('https://res.cloudinary.com/') ? item.image : '/logo-mosescafe.png',
+              price: ref.price,
+              category: ref.category,
+              available: false, // Produit hors catalogue public
+            }
+          });
         }
 
-        const itemTotal = item.price * item.quantity;
-        totalPrice += itemTotal;
-
-        // Créer un produit temporaire pour les landing pages
-        const tempProduct = await prisma.product.create({
-          data: {
-            name: item.productName,
-            description: item.description || `Produit commandé via ${source}`,
-            image: item.image || '/images/default-product.jpg',
-            price: item.price,
-            category: item.category || 'Landing Page',
-            available: false, // Produit temporaire, pas visible dans le catalogue
-          }
-        });
-
+        totalPrice += ref.price * item.quantity;
         validatedItems.push({
-          productId: tempProduct.id,
+          productId: landingProduct.id,
           quantity: item.quantity,
-          price: item.price
+          price: ref.price
         });
       } else {
         return NextResponse.json(

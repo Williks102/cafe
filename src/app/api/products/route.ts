@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth-guards';
 
 // GET /api/products - Récupérer tous les produits
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const isAdmin = searchParams.get('admin') === 'true';
+
+    if (isAdmin) {
+      const guard = await requireAdmin();
+      if (guard.error) return guard.error;
+    }
     
     const products = await prisma.product.findMany({
       where: isAdmin ? {} : {
@@ -29,6 +35,9 @@ export async function GET(request: Request) {
 // POST /api/products - Créer un nouveau produit (admin)
 export async function POST(request: Request) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return guard.error;
+
     const body = await request.json();
     const { name, description, image, price, category, available = true } = body;
 
@@ -40,7 +49,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (typeof price !== 'number' || price <= 0) {
+    if (typeof price !== 'number' || !Number.isInteger(price) || price <= 0) {
       return NextResponse.json(
         { error: 'Le prix doit être un nombre positif' },
         { status: 400 }

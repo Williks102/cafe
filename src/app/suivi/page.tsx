@@ -93,16 +93,17 @@ export default function OrderTrackingPage() {
         body: JSON.stringify({ phone: phone.trim() }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Erreur lors de la recherche');
+        throw new Error(data.error || 'Erreur lors de la recherche');
       }
 
-      const data = await response.json();
       setOrders(data.orders || []);
       setSearched(true);
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la recherche de vos commandes');
+      alert(error instanceof Error ? error.message : 'Erreur lors de la recherche de vos commandes');
     } finally {
       setLoading(false);
     }
