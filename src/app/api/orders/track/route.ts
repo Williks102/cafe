@@ -1,12 +1,12 @@
 // app/api/orders/track/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { normalizePhone } from '@/lib/phone';
 import { rateLimit, clientIp } from '@/lib/rate-limit';
+import { trackSchema, firstIssue } from '@/lib/schemas';
 
-// Suivi invité par téléphone. Le téléphone est le "secret" : on exige donc
-// un numéro complet (correspondance exacte), on limite le débit et on ne
-// renvoie que le strict nécessaire (pas d'email, d'adresse ni de notes).
+// Suivi invité : il faut le NUMÉRO DE COMMANDE ET le téléphone utilisé à la commande.
+// Un seul des deux ne suffit pas. Réponse identique que la commande n'existe pas
+// ou que le téléphone ne correspond pas (pas d'oracle d'énumération).
 export async function POST(request: Request) {
   try {
     if (!rateLimit(`track:${clientIp(request)}`, 10, 10 * 60 * 1000)) {
@@ -17,18 +17,14 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => null);
-    const phone = typeof body?.phone === 'string' ? body.phone : '';
-    const cleanPhone = normalizePhone(phone);
-
-    if (!/^[0-9]{10}$/.test(cleanPhone)) {
-      return NextResponse.json(
-        { error: 'Numéro de téléphone invalide (10 chiffres)' },
-        { status: 400 }
-      );
+    const parsed = trackSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: firstIssue(parsed.error) }, { status: 400 });
     }
+    const { orderId, phone } = parsed.data;
 
-    const orders = await prisma.order.findMany({
-      where: { customer: { phone: cleanPhone } },
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, customer: { phone } },
       select: {
         id: true,
         status: true,
@@ -43,11 +39,10 @@ export async function POST(request: Request) {
             product: { select: { name: true, category: true, image: true } }
           }
         }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 20
+      }
     });
 
+    const orders = order ? [order] : [];
     return NextResponse.json({ orders, count: orders.length });
   } catch (error) {
     console.error('Erreur lors du suivi de commande:', error);

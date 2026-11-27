@@ -6,47 +6,39 @@ const prisma = new PrismaClient();
 
 async function createAdmin() {
   console.log('👑 Création du compte administrateur...');
-  
+
+  // Plus aucun mot de passe par défaut dans le code : il doit être fourni par l'environnement.
+  const adminPassword = process.env.ADMIN_SEED_PASSWORD;
+  const adminEmail = (process.env.ADMIN_SEED_EMAIL || 'admin@mosescafe.com').toLowerCase();
+
+  if (!adminPassword || adminPassword.length < 12) {
+    console.error('❌ ADMIN_SEED_PASSWORD manquant ou trop court (12 caractères minimum). Admin non créé.');
+    return;
+  }
+
   try {
-    // Vérifier si l'admin existe déjà
-    const existingAdmin = await prisma.user.findUnique({
-      where: { email: 'admin@mosescafe.com' }
-    });
+    const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
 
     if (existingAdmin) {
-      // Mettre à jour le mot de passe si l'admin existe
-      const hashedPassword = await bcrypt.hash('admin123', 12);
-      const updatedAdmin = await prisma.user.update({
-        where: { email: 'admin@mosescafe.com' },
-        data: { 
-          password: hashedPassword,
-          role: 'ADMIN'
-        }
-      });
-      console.log('✅ Admin mis à jour:', updatedAdmin.email);
-    } else {
-      // Créer un nouvel admin
-      const hashedPassword = await bcrypt.hash('admin123', 12);
-      const admin = await prisma.user.create({
-        data: {
-          name: "Admin Moses",
-          email: "admin@mosescafe.com",
-          password: hashedPassword,
-          role: "ADMIN",
-          emailVerified: new Date(),
-        }
-      });
-      console.log('✅ Admin créé:', admin.email);
+      // On ne réécrase JAMAIS le mot de passe d'un compte existant.
+      if (existingAdmin.role !== 'ADMIN') {
+        await prisma.user.update({ where: { email: adminEmail }, data: { role: 'ADMIN' } });
+      }
+      console.log('✅ Admin déjà existant:', adminEmail);
+      return;
     }
 
-    console.log('');
-    console.log('📋 IDENTIFIANTS ADMIN :');
-    console.log('========================');
-    console.log('📧 Email    : admin@mosescafe.com');
-    console.log('🔑 Password : admin123');
-    console.log('🌐 Connexion: http://localhost:3000/auth/signin');
-    console.log('========================');
-    
+    const hashedPassword = await bcrypt.hash(adminPassword, 12);
+    await prisma.user.create({
+      data: {
+        name: 'Admin Moses',
+        email: adminEmail,
+        password: hashedPassword,
+        role: 'ADMIN',
+        emailVerified: new Date(),
+      },
+    });
+    console.log('✅ Admin créé:', adminEmail);
   } catch (error) {
     console.error('❌ Erreur lors de la création de l\'admin:', error);
   }

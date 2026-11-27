@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth-guards';
+import { productCreateSchema, firstIssue } from '@/lib/schemas';
 
 // GET /api/products - Récupérer tous les produits
 export async function GET(request: Request) {
@@ -38,23 +39,11 @@ export async function POST(request: Request) {
     const guard = await requireAdmin();
     if (guard.error) return guard.error;
 
-    const body = await request.json();
-    const { name, description, image, price, category, available = true } = body;
-
-    // Validation des données
-    if (!name || !description || !image || !price) {
-      return NextResponse.json(
-        { error: 'Tous les champs obligatoires doivent être remplis' },
-        { status: 400 }
-      );
+    const parsed = productCreateSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json({ error: firstIssue(parsed.error) }, { status: 400 });
     }
-
-    if (typeof price !== 'number' || !Number.isInteger(price) || price <= 0) {
-      return NextResponse.json(
-        { error: 'Le prix doit être un nombre positif' },
-        { status: 400 }
-      );
-    }
+    const { name, description, image, price, category, available } = parsed.data;
 
     const product = await prisma.product.create({
       data: {
@@ -63,8 +52,7 @@ export async function POST(request: Request) {
         image,
         price,
         category: category || null,
-        available: Boolean(available),
-        
+        available,
       }
     });
 
