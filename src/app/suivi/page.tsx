@@ -33,6 +33,7 @@ interface Order {
 
 export default function OrderTrackingPage() {
   const [phone, setPhone] = useState('');
+  const [orderId, setOrderId] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -78,8 +79,8 @@ export default function OrderTrackingPage() {
   };
 
   const handleSearch = async () => {
-    if (!phone.trim()) {
-      alert('Veuillez entrer votre numéro de téléphone');
+    if (!phone.trim() || !orderId.trim()) {
+      alert('Veuillez entrer votre numéro de commande et votre numéro de téléphone');
       return;
     }
 
@@ -90,7 +91,7 @@ export default function OrderTrackingPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ phone: phone.trim() }),
+        body: JSON.stringify({ phone: phone.trim(), orderId: orderId.trim() }),
       });
 
       const data = await response.json();
@@ -120,13 +121,27 @@ export default function OrderTrackingPage() {
               Suivre ma Commande
             </h1>
             <p className="text-xl text-gray-600">
-              Entrez votre numéro de téléphone pour voir l'état de vos commandes
+              Entrez votre numéro de commande et votre numéro de téléphone pour voir l'état de votre commande
             </p>
           </div>
 
           {/* Formulaire de recherche */}
           <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
             <div className="space-y-6">
+              <div>
+                <Label htmlFor="orderId" className="text-lg font-semibold">
+                  Numéro de commande
+                </Label>
+                <Input
+                  id="orderId"
+                  inputMode="numeric"
+                  placeholder="Ex : 42 (affiché à la confirmation)"
+                  value={orderId}
+                  onChange={(e) => setOrderId(e.target.value)}
+                  className="mt-2 bg-white text-lg py-3"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
               <div>
                 <Label htmlFor="phone" className="text-lg font-semibold">
                   Numéro de téléphone
@@ -172,10 +187,10 @@ export default function OrderTrackingPage() {
                     Aucune commande trouvée
                   </h3>
                   <p className="text-gray-600 mb-6">
-                    Nous n'avons trouvé aucune commande avec ce numéro de téléphone.
+                    Aucune commande ne correspond à ce numéro de commande et ce téléphone.
                   </p>
                   <div className="text-sm text-gray-500 space-y-1">
-                    <p>Vérifiez que vous avez saisi le bon numéro</p>
+                    <p>Vérifiez le numéro de commande et le téléphone utilisé lors de la commande</p>
                     <p>Ou contactez-nous au +225 XX XX XX XX XX</p>
                   </div>
                 </div>

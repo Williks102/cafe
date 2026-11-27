@@ -1,6 +1,7 @@
 // src/app/api/register/route.ts
 import { prisma } from "@/lib/prisma";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { registerSchema, firstIssue } from "@/lib/schemas";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { MosesCafeEmailService } from "@/lib/email-service";
@@ -14,34 +15,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const { name, password } = body;
-    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-
-    // Vérifie si tous les champs sont présents
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { message: "Nom, email et mot de passe sont requis." },
-        { status: 400 }
-      );
+    const parsed = registerSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json({ message: firstIssue(parsed.error) }, { status: 400 });
     }
-
-    // Validation du format email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { message: "Format d'email invalide." },
-        { status: 400 }
-      );
-    }
-
-    // Validation du mot de passe
-    if (password.length < 8) {
-      return NextResponse.json(
-        { message: "Le mot de passe doit contenir au moins 8 caractères." },
-        { status: 400 }
-      );
-    }
+    const { name, email, password } = parsed.data;
 
     // Vérifie si l'utilisateur existe déjà
     const existingUser = await prisma.user.findUnique({

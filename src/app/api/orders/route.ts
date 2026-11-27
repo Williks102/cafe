@@ -6,6 +6,7 @@ import { OrderWithFullRelations } from '@/types/email-types';
 import { normalizePhone } from '@/lib/phone';
 import { LANDING_CATALOG } from '@/lib/landing-catalog';
 import { rateLimit, clientIp } from '@/lib/rate-limit';
+import { orderCreateSchema, firstIssue } from '@/lib/schemas';
 
 interface ValidatedOrderItem {
   productId: number;
@@ -93,7 +94,11 @@ export async function POST(request: Request) {
     }
 
     const session = await auth();
-    const body = await request.json();
+    const parsedBody = orderCreateSchema.safeParse(await request.json().catch(() => null));
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: firstIssue(parsedBody.error) }, { status: 400 });
+    }
+    const body = parsedBody.data;
     
     // Deux types de commandes possibles :
     // 1. Commande utilisateur connecté (items seulement)

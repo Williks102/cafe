@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth-guards';
+import { productUpdateSchema, firstIssue } from '@/lib/schemas';
 
 // GET /api/products/[id] - Récupérer un produit par ID
 export async function GET(
@@ -52,7 +53,11 @@ export async function PUT(
 
     const { id } = await context.params;
     const productId = parseInt(id);
-    const body = await request.json();
+    const parsed = productUpdateSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json({ error: firstIssue(parsed.error) }, { status: 400 });
+    }
+    const body = parsed.data;
 
     if (isNaN(productId)) {
       return NextResponse.json(
@@ -77,13 +82,9 @@ export async function PUT(
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
-        // Liste blanche : pas de mass assignment (id, createdAt, etc.)
-        ...(typeof body.name === 'string' && { name: body.name }),
-        ...(typeof body.description === 'string' && { description: body.description }),
-        ...(typeof body.image === 'string' && { image: body.image }),
-        ...(Number.isInteger(body.price) && body.price > 0 && { price: body.price }),
-        ...(body.category !== undefined && { category: body.category || null }),
-        ...(typeof body.available === 'boolean' && { available: body.available }),
+        // Le schéma zod ne laisse passer que les champs autorisés
+        ...body,
+        category: body.category === undefined ? undefined : body.category || null,
       }
     });
 
